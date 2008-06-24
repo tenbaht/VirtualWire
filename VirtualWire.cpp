@@ -3,6 +3,10 @@
 // Virtual Wire implementation for Arduino
 // See the README file in this directory fdor documentation
 //
+// Changes:
+// 2008-05-25: fixed a bug that could prevent messages with certain
+//  bytes sequences being received (false message start detected)
+//
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
 // $Id: VirtualWire.cpp,v 1.2 2008/04/20 09:24:17 mikem Exp mikem $
@@ -201,8 +205,9 @@ void vw_pll()
 		    (vw_symbol_6to4(vw_rx_bits & 0x3f)) << 4 
 		    | vw_symbol_6to4(vw_rx_bits >> 6);
 
-		// The first decoded bye is the byte count of the following message
+		// The first decoded byte is the byte count of the following message
 		// the count includes the byte count and the 2 trailing FCS bytes
+		// REVISIT: may also include the ACK flag at 0x40
 		if (vw_rx_len == 0)
 		{
 		    // The first byte is the byte count
@@ -229,11 +234,8 @@ void vw_pll()
 		vw_rx_bit_count = 0;
 	    }
 	}
-
-	// See if we have a start symbol yet
-	// Need to look for this even if we are part way through 
-	// a message in case the byte count is wrong or we miss some of the message
-	if (vw_rx_bits == 0xb38)
+	// Not in a message, see if we have a start symbol
+	else if (vw_rx_bits == 0xb38)
 	{
 	    // Have start symbol, start collecting message
 	    vw_rx_active = true;
@@ -259,7 +261,14 @@ void vw_setup(uint16_t speed)
     // Caution: special procedures for setting 16 bit regs
     OCR1A = ocr1a;
     // Enable interrupt
+#ifdef TIMSK1
+    // atmega168
     TIMSK1 |= _BV(OCIE1A);
+#else
+    // others
+    TIMSK |= _BV(OCIE1A);
+#endif
+
 #endif
 
     // Set up digital IO pins
