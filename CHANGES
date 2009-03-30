@@ -1,0 +1,9 @@
+1.2	2009-03-30
+	Fixed a problem that prevented compiling with arduino-0015
+	Reported by Jaime Castro
+
+1.1	2008-06-24
+	Now can compile for atmega8
+	Reported by creatrope
+
+1.0	Original release

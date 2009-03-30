@@ -9,7 +9,7 @@
 // See VirtualWire.h for detailed API docs
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: server.pde,v 1.1 2008/04/20 09:24:17 mikem Exp mikem $
+// $Id: server.pde,v 1.1 2008/04/20 09:24:17 mikem Exp $
 
 #include <VirtualWire.h>
 

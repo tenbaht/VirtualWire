@@ -9,7 +9,7 @@
 //
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.2 2008/04/20 09:24:17 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.3 2009/03/30 00:07:24 mikem Exp $
 
 #include "WProgram.h"
 #include "VirtualWire.h"

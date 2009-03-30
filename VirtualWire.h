@@ -5,11 +5,12 @@
 // 
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.2 2008/04/20 09:24:17 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.3 2009/03/30 00:07:24 mikem Exp $
 
 #ifndef VirtualWire_h
 #define VirtualWire_h
 
+#include <stdlib.h>
 #include <wiring.h>
 
 // Maximum number of bytes in a message, counting the byte count and FCS

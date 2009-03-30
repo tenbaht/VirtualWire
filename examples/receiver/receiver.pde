@@ -6,7 +6,7 @@
 // See VirtualWire.h for detailed API docs
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: receiver.pde,v 1.2 2008/04/20 09:24:17 mikem Exp mikem $
+// $Id: receiver.pde,v 1.3 2009/03/30 00:07:24 mikem Exp $
 
 #include <VirtualWire.h>
 
@@ -16,7 +16,9 @@ void setup()
     Serial.println("setup");
 
     // Initialise the IO and ISR
+    vw_set_ptt_inverted(true); // Required for DR3100
     vw_setup(2000);	 // Bits per sec
+
     vw_rx_start();       // Start the receiver PLL running
 }
 
