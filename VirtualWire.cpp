@@ -9,7 +9,7 @@
 //
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.3 2009/03/30 00:07:24 mikem Exp $
+// $Id: VirtualWire.cpp,v 1.4 2009/03/31 20:49:41 mikem Exp mikem $
 
 #include "WProgram.h"
 #include "VirtualWire.h"
@@ -408,7 +408,8 @@ uint8_t vw_send(uint8_t* buf, uint8_t len)
 // This is the interrupt service routine called when timer1 overflows
 // Its job is to output the next bit from the transmitter (every 8 calls)
 // and to call the PLL code if the receiver is enabled
-ISR(SIG_OUTPUT_COMPARE1A)
+//ISR(SIG_OUTPUT_COMPARE1A)
+SIGNAL(TIMER1_COMPA_vect)
 {
     vw_rx_sample = digitalRead(vw_rx_pin);
 
