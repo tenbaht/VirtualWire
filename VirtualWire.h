@@ -13,6 +13,11 @@
 #include <stdlib.h>
 #include <wiring.h>
 
+// These defs cause trouble on some versions of Arduino
+#undef abs
+#undef double
+#undef round
+
 // Maximum number of bytes in a message, counting the byte count and FCS
 #define VW_MAX_MESSAGE_LEN 30
 
