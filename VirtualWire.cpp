@@ -327,6 +327,12 @@ void vw_rx_stop()
     vw_rx_enabled = false;
 }
 
+// Return true if the transmitter is active
+uint8_t vx_tx_active()
+{
+    return vw_tx_enabled;
+}
+
 // Wait for the transmitter to become available
 // Busy-wait loop until the ISR says the message has been sent
 void vw_wait_tx()

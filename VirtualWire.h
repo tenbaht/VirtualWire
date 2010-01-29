@@ -86,6 +86,9 @@ extern "C"
     // Saves interrupt processing cycles
     extern void vw_rx_stop();
 
+    // Return true if the transmitter is active
+    extern uint8_t vx_tx_active();
+
     // Block until the transmitter is idle
     extern void vw_wait_tx();
 
