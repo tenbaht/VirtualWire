@@ -4,12 +4,14 @@
 // See the README file in this directory fdor documentation
 //
 // Changes:
-// 2008-05-25: fixed a bug that could prevent messages with certain
+// 1.5 2008-05-25: fixed a bug that could prevent messages with certain
 //  bytes sequences being received (false message start detected)
+// 1.6 2011-09-10: Patch from David Bath to prevent unconditional reenabling of the receiver
+//  at end of transmission.
 //
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.4 2009/03/31 20:49:41 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.5 2011/09/09 23:23:14 mikem Exp mikem $
 
 #include "WProgram.h"
 #include "VirtualWire.h"
@@ -286,9 +288,6 @@ void vw_tx_start()
     vw_tx_bit = 0;
     vw_tx_sample = 0;
 
-    // Disable the receiver PLL
-    vw_rx_enabled = false;
-
     // Enable the transmitter hardware
     digitalWrite(vw_ptt_pin, true ^ vw_ptt_inverted);
 
@@ -305,9 +304,6 @@ void vw_tx_stop()
 
     // No more ticks for the transmitter
     vw_tx_enabled = false;
-
-    // Enable the receiver PLL
-    vw_rx_enabled = true;
 }
 
 // Enable the receiver. When a message becomes available, vw_rx_done flag
@@ -445,7 +441,7 @@ SIGNAL(TIMER1_COMPA_vect)
     if (vw_tx_sample > 7)
 	vw_tx_sample = 0;
 
-    if (vw_rx_enabled)
+    if (vw_rx_enabled && !vw_tx_enabled)
 	vw_pll();
 }
 
