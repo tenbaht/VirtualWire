@@ -11,7 +11,11 @@
 #define VirtualWire_h
 
 #include <stdlib.h>
+#if ARDUINO >= 100
+#include <Arduino.h>
+#else
 #include <wiring.h>
+#endif
 
 // These defs cause trouble on some versions of Arduino
 #undef abs

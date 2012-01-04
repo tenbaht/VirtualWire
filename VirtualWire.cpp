@@ -13,7 +13,9 @@
 // Copyright (C) 2008 Mike McCauley
 // $Id: VirtualWire.cpp,v 1.5 2011/09/09 23:23:14 mikem Exp mikem $
 
+#if (ARDUINO < 100)
 #include "WProgram.h"
+#endif
 #include "VirtualWire.h"
 #include <util/crc16.h>
 
