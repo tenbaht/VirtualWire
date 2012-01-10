@@ -11,7 +11,7 @@
 //
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.5 2011/09/09 23:23:14 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.6 2012/01/10 22:21:03 mikem Exp mikem $
 
 #if (ARDUINO < 100)
 #include "WProgram.h"
