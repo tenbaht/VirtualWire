@@ -1,3 +1,16 @@
+1.10
+	Updated this CHANGES file with changes since 1.4.
+
+1.9     2012-02-07 Documentation updates
+	Documentation updates
+
+1.6     2012-01-10
+	Fixed a problem where the receiver was always reenabled after
+	transmission. Reported by David Bath
+
+1.5	2011-09-09
+	Added vx_tx_active() function.
+
 1.4	2010-01-29
 	Added vx_tx_active(), suggested by Alan Burlison.
 

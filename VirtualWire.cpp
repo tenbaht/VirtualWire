@@ -2,6 +2,9 @@
 //
 // Virtual Wire implementation for Arduino
 // See the README file in this directory fdor documentation
+// See also
+// ASH Transceiver Software Designer's Guide of 2002.08.07
+//   http://www.rfm.com/products/apnotes/tr_swg05.pdf
 //
 // Changes:
 // 1.5 2008-05-25: fixed a bug that could prevent messages with certain
@@ -100,7 +103,7 @@ static uint8_t vw_rx_good = 0;
 // 4 bit to 6 bit symbol converter table
 // Used to convert the high and low nybbles of the transmitted data
 // into 6 bit symbols for transmission. Each 6-bit symbol has 3 1s and 3 0s 
-// with at most 2 consecutive identical bits
+// with at most 3 consecutive identical bits
 static uint8_t symbols[] =
 {
     0xd,  0xe,  0x13, 0x15, 0x16, 0x19, 0x1a, 0x1c, 
