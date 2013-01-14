@@ -14,13 +14,23 @@
 //
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.7 2013/01/13 21:13:05 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.8 2013/01/14 06:49:29 mikem Exp mikem $
 
-#if (ARDUINO < 100)
-#include "WProgram.h"
+
+#if defined(ARDUINO)
+ #if (ARDUINO < 100)
+  #include "WProgram.h"
+ #endif
+#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
+ #include "legacymsp430.h"
+ #include "Energia.h"
+#else // error
+ #error Platform not defined
 #endif
+
 #include "VirtualWire.h"
 #include <util/crc16.h>
+
 
 static uint8_t vw_tx_buf[(VW_MAX_MESSAGE_LEN * 2) + VW_HEADER_LEN] 
      = {0x2a, 0x2a, 0x2a, 0x2a, 0x2a, 0x2a, 0x38, 0x2c};
@@ -253,7 +263,28 @@ void vw_pll()
     }
 }
 
+
 // Speed is in bits per sec RF rate
+#if defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
+void vw_setup(uint16_t speed)
+{
+	// Calculate the counter overflow count based on the required bit speed
+	// and CPU clock rate
+	uint16_t ocr1a = (F_CPU / 8UL) / speed;
+		
+	// This code is for Energia/MSP430
+	TA0CCR0 = ocr1a;				// Ticks for 62,5 us
+	TA0CTL = TASSEL_2 + MC_1;       // SMCLK, up mode
+	TA0CCTL0 |= CCIE;               // CCR0 interrupt enabled
+		
+	// Set up digital IO pins
+	pinMode(vw_tx_pin, OUTPUT);
+	pinMode(vw_rx_pin, INPUT);
+	pinMode(vw_ptt_pin, OUTPUT);
+	digitalWrite(vw_ptt_pin, vw_ptt_inverted);
+}	
+
+#elif defined (ARDUINO) // Arduino specific
 void vw_setup(uint16_t speed)
 {
     // Calculate the OCR1A overflow count based on the required bit speed
@@ -284,7 +315,9 @@ void vw_setup(uint16_t speed)
     pinMode(vw_ptt_pin, OUTPUT);
     digitalWrite(vw_ptt_pin, vw_ptt_inverted);
 }
-
+	
+#endif
+	
 // Start the transmitter, call when the tx buffer is ready to go and vw_tx_len is
 // set to the total number of symbols to send
 void vw_tx_start()
@@ -412,45 +445,6 @@ uint8_t vw_send(uint8_t* buf, uint8_t len)
     return true;
 }
 
-// This is the interrupt service routine called when timer1 overflows
-// Its job is to output the next bit from the transmitter (every 8 calls)
-// and to call the PLL code if the receiver is enabled
-//ISR(SIG_OUTPUT_COMPARE1A)
-SIGNAL(TIMER1_COMPA_vect)
-{
-    if (vw_rx_enabled && !vw_tx_enabled)
-	vw_rx_sample = digitalRead(vw_rx_pin);
-
-    // Do transmitter stuff first to reduce transmitter bit jitter due 
-    // to variable receiver processing
-    if (vw_tx_enabled && vw_tx_sample++ == 0)
-    {
-        // Send next bit
-	// Symbols are sent LSB first
-        // Finished sending the whole message? (after waiting one bit period 
-	// since the last bit)
-        if (vw_tx_index >= vw_tx_len)
-	{
-	    vw_tx_stop();
-	    vw_tx_msg_count++;
-	}
-        else
-        {
-	    digitalWrite(vw_tx_pin, vw_tx_buf[vw_tx_index] & (1 << vw_tx_bit++));
-	    if (vw_tx_bit >= 6)
-	    {
-	        vw_tx_bit = 0;
-                vw_tx_index++;
-	    }
-        }
-    }
-    if (vw_tx_sample > 7)
-	vw_tx_sample = 0;
-
-    if (vw_rx_enabled && !vw_tx_enabled)
-	vw_pll();
-}
-
 // Return true if there is a message available
 uint8_t vw_have_message()
 {
@@ -463,24 +457,107 @@ uint8_t vw_have_message()
 uint8_t vw_get_message(uint8_t* buf, uint8_t* len)
 {
     uint8_t rxlen;
-
+    
     // Message available?
     if (!vw_rx_done)
 	return false;
-
+    
     // Wait until vw_rx_done is set before reading vw_rx_len
     // then remove bytecount and FCS
     rxlen = vw_rx_len - 3;
-
+    
     // Copy message (good or bad)
     if (*len > rxlen)
 	*len = rxlen;
     memcpy(buf, vw_rx_buf + 1, *len);
-
+    
     vw_rx_done = false; // OK, got that message thanks
-
+    
     // Check the FCS, return goodness
     return (vw_crc(vw_rx_buf, vw_rx_len) == 0xf0b8); // FCS OK?
 }
+
+// This is the interrupt service routine called when timer1 overflows
+// Its job is to output the next bit from the transmitter (every 8 calls)
+// and to call the PLL code if the receiver is enabled
+//ISR(SIG_OUTPUT_COMPARE1A)
+#if defined (ARDUINO) // Arduino specific
+SIGNAL(TIMER1_COMPA_vect)
+{
+    if (vw_rx_enabled && !vw_tx_enabled)
+	vw_rx_sample = digitalRead(vw_rx_pin);
+    
+    // Do transmitter stuff first to reduce transmitter bit jitter due 
+    // to variable receiver processing
+    if (vw_tx_enabled && vw_tx_sample++ == 0)
+    {
+	// Send next bit
+	// Symbols are sent LSB first
+	// Finished sending the whole message? (after waiting one bit period 
+	// since the last bit)
+	if (vw_tx_index >= vw_tx_len)
+	{
+	    vw_tx_stop();
+	    vw_tx_msg_count++;
+	}
+	else
+	{
+	    digitalWrite(vw_tx_pin, vw_tx_buf[vw_tx_index] & (1 << vw_tx_bit++));
+	    if (vw_tx_bit >= 6)
+	    {
+		vw_tx_bit = 0;
+		vw_tx_index++;
+	    }
+	}
+    }
+    if (vw_tx_sample > 7)
+	vw_tx_sample = 0;
+    
+    if (vw_rx_enabled && !vw_tx_enabled)
+	vw_pll();
+}
+#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
+void vw_Int_Handler()
+{
+    if (vw_rx_enabled && !vw_tx_enabled)
+	vw_rx_sample = digitalRead(vw_rx_pin);
+    
+    // Do transmitter stuff first to reduce transmitter bit jitter due 
+    // to variable receiver processing
+    if (vw_tx_enabled && vw_tx_sample++ == 0)
+    {
+	// Send next bit
+	// Symbols are sent LSB first
+	// Finished sending the whole message? (after waiting one bit period 
+	// since the last bit)
+	if (vw_tx_index >= vw_tx_len)
+	{
+	    vw_tx_stop();
+	    vw_tx_msg_count++;
+	}
+	else
+	{
+	    digitalWrite(vw_tx_pin, vw_tx_buf[vw_tx_index] & (1 << vw_tx_bit++));
+	    if (vw_tx_bit >= 6)
+	    {
+		vw_tx_bit = 0;
+		vw_tx_index++;
+	    }
+	}
+    }
+    if (vw_tx_sample > 7)
+	vw_tx_sample = 0;
+    
+    if (vw_rx_enabled && !vw_tx_enabled)
+	vw_pll();
+}
+
+interrupt(TIMER0_A0_VECTOR) Timer_A_int(void) 
+{
+    vw_Int_Handler();
+};
+
+#endif
+
 
 }

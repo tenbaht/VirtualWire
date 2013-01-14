@@ -4,11 +4,11 @@
 #
 # Author: Mike McCauley (mikem@airspayce.com)
 # Copyright (C) 2011 Mike McCauley
-# $Id: Makefile,v 1.6 2012/09/05 23:31:39 mikem Exp mikem $
+# $Id: Makefile,v 1.1 2013/01/14 06:49:29 mikem Exp mikem $
 
 PROJNAME = VirtualWire
 # Dont forget to also change the version at the top of RF22.h:
-DISTFILE = $(PROJNAME)-1.11.zip
+DISTFILE = $(PROJNAME)-1.12.zip
 
 all:	doxygen dist upload
 

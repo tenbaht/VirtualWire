@@ -5,7 +5,7 @@
 // 
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.4 2012/01/10 22:21:03 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.5 2013/01/14 06:49:29 mikem Exp mikem $
 
 /// \mainpage VirtualWire library for Arduino
 ///
@@ -39,7 +39,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.open.com.au/mikem/arduino/VirtualWire/VirtualWire-1.11.zip
+/// from http://www.open.com.au/mikem/arduino/VirtualWire/VirtualWire-1.12.zip
 /// You can find the latest version at http://www.open.com.au/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -51,7 +51,8 @@
 /// available in common retail outlets in Australian and other countries for
 /// under $10 per unit. Many other modules may also work with this software.
 /// Runs on ATmega8/168 (Arduino Diecimila etc) and ATmega328 and possibly
-/// others
+/// others. Also runs on on Energia with MSP430G2553 / G2452 and Arduino with ATMega328 (courtesy Yannick DEVOS - XV4Y).
+///
 /// - Receivers
 ///  - RX-B1 (433.92MHz) (also known as ST-RX04-ASK)
 /// - Transmitters: 
@@ -108,6 +109,8 @@
 /// \version 1.10 Updated CHANGES file with changes since 1.4.
 /// \version 1.11 Converted documentation to Doxygen. Moved CHANGES log to this version history.
 ///     Ensure vw_rx_pin is not accessed unless receiver is enabled
+/// \version 1.12 Compiles and runs on on Energia with MSP430G2553 / G2452 and Arduino with ATMega328. 
+///     Patches contributed by Yannick DEVOS - XV4Y
 ///
 /// \par Implementation Details
 /// See: http://www.open.com.au/mikem/arduino/VirtualWire.pdf
@@ -132,10 +135,17 @@
 #define VirtualWire_h
 
 #include <stdlib.h>
-#if ARDUINO >= 100
-#include <Arduino.h>
-#else
-#include <wiring.h>
+#if defined(ARDUINO)
+ #if ARDUINO >= 100
+  #include <Arduino.h>
+ #else
+  #include <wiring.h>
+ #endif
+#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
+ #include "legacymsp430.h"
+ #include "Energia.h"
+#else // error
+ #error Platform not defined
 #endif
 
 // These defs cause trouble on some versions of Arduino
