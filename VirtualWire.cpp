@@ -14,7 +14,7 @@
 //
 // Author: Mike McCauley (mikem@open.com.au)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.6 2012/01/10 22:21:03 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.7 2013/01/13 21:13:05 mikem Exp mikem $
 
 #if (ARDUINO < 100)
 #include "WProgram.h"
@@ -418,7 +418,8 @@ uint8_t vw_send(uint8_t* buf, uint8_t len)
 //ISR(SIG_OUTPUT_COMPARE1A)
 SIGNAL(TIMER1_COMPA_vect)
 {
-    vw_rx_sample = digitalRead(vw_rx_pin);
+    if (vw_rx_enabled && !vw_tx_enabled)
+	vw_rx_sample = digitalRead(vw_rx_pin);
 
     // Do transmitter stuff first to reduce transmitter bit jitter due 
     // to variable receiver processing
