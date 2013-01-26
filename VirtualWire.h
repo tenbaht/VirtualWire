@@ -39,7 +39,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.open.com.au/mikem/arduino/VirtualWire/VirtualWire-1.12.zip
+/// from http://www.open.com.au/mikem/arduino/VirtualWire/VirtualWire-1.13.zip
 /// You can find the latest version at http://www.open.com.au/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -111,6 +111,8 @@
 ///     Ensure vw_rx_pin is not accessed unless receiver is enabled
 /// \version 1.12 Compiles and runs on on Energia with MSP430G2553 / G2452 and Arduino with ATMega328. 
 ///     Patches contributed by Yannick DEVOS - XV4Y
+/// \version 1.13 util/crc16.h needed for compiling on  Energia with MSP430G2553 / G2452 was accidentally
+///     left out of the distribution
 ///
 /// \par Implementation Details
 /// See: http://www.open.com.au/mikem/arduino/VirtualWire.pdf
@@ -197,19 +199,19 @@ extern "C"
     /// Set the digital IO pin to be for transmit data. 
     /// This pin will only be accessed if
     /// the transmitter is enabled
-    /// \param[in] pin The Ardiuno pin number for transmitting data. Defaults to 12.
+    /// \param[in] pin The Arduino pin number for transmitting data. Defaults to 12.
     extern void vw_set_tx_pin(uint8_t pin);
 
     /// Set the digital IO pin to be for receive data.
     /// This pin will only be accessed if
     /// the receiver is enabled
-    /// \param[in] pin The Ardiuno pin number for receiving data. Defaults to 11.
+    /// \param[in] pin The Arduino pin number for receiving data. Defaults to 11.
     extern void vw_set_rx_pin(uint8_t pin);
 
     // Set the digital IO pin to enable the transmitter (press to talk, PTT)'
     /// This pin will only be accessed if
     /// the transmitter is enabled
-    /// \param[in] pin The Ardiuno pin number to enable the transmitter. Defaults to 10.
+    /// \param[in] pin The Arduino pin number to enable the transmitter. Defaults to 10.
     extern void vw_set_ptt_pin(uint8_t pin);
 
     /// By default the PTT pin goes high when the transmitter is enabled.
