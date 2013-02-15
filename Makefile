@@ -8,7 +8,7 @@
 
 PROJNAME = VirtualWire
 # Dont forget to also change the version at the top of RF22.h:
-DISTFILE = $(PROJNAME)-1.13.zip
+DISTFILE = $(PROJNAME)-1.14.zip
 
 all:	doxygen dist upload
 
