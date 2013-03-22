@@ -12,7 +12,7 @@
 // 1.6 2011-09-10: Patch from David Bath to prevent unconditional reenabling of the receiver
 //  at end of transmission.
 //
-// Author: Mike McCauley (mikem@open.com.au)
+// Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2008 Mike McCauley
 // $Id: VirtualWire.cpp,v 1.9 2013/02/14 22:02:11 mikem Exp mikem $
 

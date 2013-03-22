@@ -3,7 +3,7 @@
 // Virtual Wire implementation for Arduino
 // See the README file in this directory fdor documentation
 // 
-// Author: Mike McCauley (mikem@open.com.au)
+// Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
 // $Id: VirtualWire.h,v 1.6 2013/02/14 22:02:11 mikem Exp mikem $
 
@@ -39,8 +39,8 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.open.com.au/mikem/arduino/VirtualWire/VirtualWire-1.14.zip
-/// You can find the latest version at http://www.open.com.au/mikem/arduino/VirtualWire
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.15.zip
+/// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
 /// Please use that group for all questions and discussions on this topic. 
@@ -82,7 +82,7 @@
 ///
 /// This is the appropriate option if you are creating proprietary applications
 /// and you are not prepared to distribute and share the source code of your
-/// application. Contact info@open.com.au for details.
+/// application. Contact info@airspayce.com for details.
 ///
 /// \par Revision History
 /// \version 1.0 Original release
@@ -116,15 +116,16 @@
 /// \version 1.13 util/crc16.h needed for compiling on  Energia with MSP430G2553 / G2452 was accidentally
 ///     left out of the distribution
 /// \version 1.14 Added support ATtiny85 on Arduino, patch provided by r4z0r7o3.
+/// \version 1.15 Updated author and distribution location details to airspayce.com
 ///
 /// \par Implementation Details
-/// See: http://www.open.com.au/mikem/arduino/VirtualWire.pdf
+/// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
 ///
 /// \par Performance
-/// See: http://www.open.com.au/mikem/arduino/VirtualWire.pdf
+/// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
 ///
 /// \par Connections
-/// See: http://www.open.com.au/mikem/arduino/VirtualWire.pdf
+/// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
 ///
 /// \file VirtualWire.h
 /// \brief VirtualWire API
