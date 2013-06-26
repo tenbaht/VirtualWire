@@ -311,6 +311,21 @@ static uint8_t _timer_calc(uint16_t speed, uint16_t max_ticks, uint16_t *nticks)
     return prescaler;
 }
 
+#if defined(__arm__) && defined(CORE_TEENSY)
+  // This allows the AVR interrupt code below to be run from an
+  // IntervalTimer object.  It must be above vw_setup(), so the
+  // the TIMER1_COMPA_vect function name is defined.
+  #ifdef SIGNAL
+  #undef SIGNAL
+  #endif
+  #define SIGNAL(f) void f(void)
+  #ifdef TIMER1_COMPA_vect
+  #undef TIMER1_COMPA_vect
+  #endif
+  void TIMER1_COMPA_vect(void);
+#endif
+
+
 // Speed is in bits per sec RF rate
 #if defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
 void vw_setup(uint16_t speed)
@@ -357,6 +372,11 @@ void vw_setup(uint16_t speed)
 
     // Set mask to fire interrupt when OCF0A bit is set in TIFR0
     TIMSK |= _BV(OCIE0A);
+
+#elif defined(__arm__) && defined(CORE_TEENSY)
+    // on Teensy 3.0 (32 bit ARM), use an interval timer
+    IntervalTimer *t = new IntervalTimer();
+    t->begin(TIMER1_COMPA_vect, 125000.0 / (float)(speed));
 
 #else // ARDUINO
     // This is the path for most Arduinos

@@ -5,7 +5,7 @@
 // 
 // Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.6 2013/02/14 22:02:11 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.7 2013/06/25 22:20:16 mikem Exp mikem $
 
 /// \mainpage VirtualWire library for Arduino
 ///
@@ -39,7 +39,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.15.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.16.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -52,7 +52,8 @@
 /// under $10 per unit. Many other modules may also work with this software.
 /// Runs on ATmega8/168 (Arduino Diecimila, Uno etc) and ATmega328 and possibly
 /// others. Also runs on on Energia with MSP430G2553 / G2452 and Arduino with 
-/// ATMega328 (courtesy Yannick DEVOS - XV4Y).
+/// ATMega328 (courtesy Yannick DEVOS - XV4Y), but untested by us.
+/// It also runs on Teensy 3.0 (courtesy of Paul Stoffregen), but untested by us..
 /// Also compiles and runs on ATtiny85 in Arduino environment, courtesy r4z0r7o3.
 ///
 /// - Receivers
@@ -117,6 +118,7 @@
 ///     left out of the distribution
 /// \version 1.14 Added support ATtiny85 on Arduino, patch provided by r4z0r7o3.
 /// \version 1.15 Updated author and distribution location details to airspayce.com
+/// \version 1.16 Added support for Teensy 3.0, contributed by Paul Stoffregen.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
