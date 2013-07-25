@@ -14,7 +14,7 @@
 //
 // Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.9 2013/02/14 22:02:11 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.11 2013/06/25 22:26:15 mikem Exp mikem $
 
 
 #if defined(ARDUINO)
@@ -573,6 +573,16 @@ uint8_t vw_get_message(uint8_t* buf, uint8_t* len)
     
     // Check the FCS, return goodness
     return (vw_crc(vw_rx_buf, vw_rx_len) == 0xf0b8); // FCS OK?
+}
+
+uint8_t vw_get_rx_good()
+{
+    return vw_rx_good;
+}
+
+uint8_t vw_get_rx_bad()
+{
+    return vw_rx_bad;
 }
 
 // This is the interrupt service routine called when timer1 overflows

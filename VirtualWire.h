@@ -5,7 +5,7 @@
 // 
 // Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.7 2013/06/25 22:20:16 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.8 2013/06/25 22:26:15 mikem Exp mikem $
 
 /// \mainpage VirtualWire library for Arduino
 ///
@@ -39,7 +39,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.16.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.17.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -47,13 +47,13 @@
 /// Do not contact the author directly, unless it is to discuss commercial licensing.
 ///
 /// \par Supported Hardware
-/// A range of communications hardware is supported. The ones listed blow are
+/// A range of communications hardware is supported. The ones listed below are
 /// available in common retail outlets in Australian and other countries for
 /// under $10 per unit. Many other modules may also work with this software.
 /// Runs on ATmega8/168 (Arduino Diecimila, Uno etc) and ATmega328 and possibly
 /// others. Also runs on on Energia with MSP430G2553 / G2452 and Arduino with 
 /// ATMega328 (courtesy Yannick DEVOS - XV4Y), but untested by us.
-/// It also runs on Teensy 3.0 (courtesy of Paul Stoffregen), but untested by us..
+/// It also runs on Teensy 3.0 (courtesy of Paul Stoffregen), but untested by us.
 /// Also compiles and runs on ATtiny85 in Arduino environment, courtesy r4z0r7o3.
 ///
 /// - Receivers
@@ -119,6 +119,8 @@
 /// \version 1.14 Added support ATtiny85 on Arduino, patch provided by r4z0r7o3.
 /// \version 1.15 Updated author and distribution location details to airspayce.com
 /// \version 1.16 Added support for Teensy 3.0, contributed by Paul Stoffregen.
+/// \version 1.17 Increase default MAX_MESSAGE_LENGTH to 80. Added vw_get_rx_good() and vw_get_rx_bad()
+///               functions.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
@@ -162,7 +164,7 @@
 #undef round
 
 /// Maximum number of bytes in a message, counting the byte count and FCS
-#define VW_MAX_MESSAGE_LEN 30
+#define VW_MAX_MESSAGE_LEN 80
 
 /// The maximum payload length
 #define VW_MAX_PAYLOAD VW_MAX_MESSAGE_LEN-3
@@ -267,16 +269,28 @@ extern "C"
     /// \return true if the message was accepted for transmission, false if the message is too long (>VW_MAX_MESSAGE_LEN - 3)
     extern uint8_t vw_send(uint8_t* buf, uint8_t len);
 
-    // Returns true if an unread message is available
+    /// Returns true if an unread message is available
     /// \return true if a message is available to read
     extern uint8_t vw_have_message();
 
-    // If a message is available (good checksum or not), copies
-    // up to *len octets to buf.
+    /// If a message is available (good checksum or not), copies
+    /// up to *len octets to buf.
     /// \param[in] buf Pointer to location to save the read data (must be at least *len bytes.
     /// \param[in,out] len Available space in buf. Will be set to the actual number of octets read
     /// \return true if there was a message and the checksum was good
     extern uint8_t vw_get_message(uint8_t* buf, uint8_t* len);
+
+    /// Returns the count of good messages received
+    /// Caution,: this is an 8 bit count and can easily overflow
+    /// \return Count of good messages received
+    extern uint8_t vw_get_rx_good();
+
+    /// Returns the count of bad messages received, ie
+    /// messages with bogus lengths, indicating corruption
+    /// or lost octets.
+    /// Caution,: this is an 8 bit count and can easily overflow
+    /// \return Count of bad messages received
+    extern uint8_t vw_get_rx_bad();
 }
 
 /// @example client.pde
