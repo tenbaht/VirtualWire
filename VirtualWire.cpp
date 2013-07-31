@@ -24,6 +24,8 @@
 #elif defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
  #include "legacymsp430.h"
  #include "Energia.h"
+#elif defined(MCU_STM32F103RE) // Maple etc
+#include <string.h>
 #else // error
  #error Platform not defined
 #endif
@@ -263,6 +265,43 @@ void vw_pll()
     }
 }
 
+#if defined(__arm__) && defined(CORE_TEENSY)
+  // This allows the AVR interrupt code below to be run from an
+  // IntervalTimer object.  It must be above vw_setup(), so the
+  // the TIMER1_COMPA_vect function name is defined.
+  #ifdef SIGNAL
+  #undef SIGNAL
+  #endif
+  #define SIGNAL(f) void f(void)
+  #ifdef TIMER1_COMPA_vect
+  #undef TIMER1_COMPA_vect
+  #endif
+  void TIMER1_COMPA_vect(void);
+#endif
+
+
+// Speed is in bits per sec RF rate
+#if defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
+void vw_setup(uint16_t speed)
+{
+	// Calculate the counter overflow count based on the required bit speed
+	// and CPU clock rate
+	uint16_t ocr1a = (F_CPU / 8UL) / speed;
+		
+	// This code is for Energia/MSP430
+	TA0CCR0 = ocr1a;				// Ticks for 62,5 us
+	TA0CTL = TASSEL_2 + MC_1;       // SMCLK, up mode
+	TA0CCTL0 |= CCIE;               // CCR0 interrupt enabled
+		
+	// Set up digital IO pins
+	pinMode(vw_tx_pin, OUTPUT);
+	pinMode(vw_rx_pin, INPUT);
+	pinMode(vw_ptt_pin, OUTPUT);
+	digitalWrite(vw_ptt_pin, vw_ptt_inverted);
+}	
+
+#elif defined (ARDUINO) // Arduino specific
+
 // Common function for setting timer ticks @ prescaler values for speed
 // Returns prescaler index into {0, 1, 8, 64, 256, 1024} array
 // and sets nticks to compare-match value if lower than max_ticks
@@ -311,42 +350,6 @@ static uint8_t _timer_calc(uint16_t speed, uint16_t max_ticks, uint16_t *nticks)
     return prescaler;
 }
 
-#if defined(__arm__) && defined(CORE_TEENSY)
-  // This allows the AVR interrupt code below to be run from an
-  // IntervalTimer object.  It must be above vw_setup(), so the
-  // the TIMER1_COMPA_vect function name is defined.
-  #ifdef SIGNAL
-  #undef SIGNAL
-  #endif
-  #define SIGNAL(f) void f(void)
-  #ifdef TIMER1_COMPA_vect
-  #undef TIMER1_COMPA_vect
-  #endif
-  void TIMER1_COMPA_vect(void);
-#endif
-
-
-// Speed is in bits per sec RF rate
-#if defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
-void vw_setup(uint16_t speed)
-{
-	// Calculate the counter overflow count based on the required bit speed
-	// and CPU clock rate
-	uint16_t ocr1a = (F_CPU / 8UL) / speed;
-		
-	// This code is for Energia/MSP430
-	TA0CCR0 = ocr1a;				// Ticks for 62,5 us
-	TA0CTL = TASSEL_2 + MC_1;       // SMCLK, up mode
-	TA0CCTL0 |= CCIE;               // CCR0 interrupt enabled
-		
-	// Set up digital IO pins
-	pinMode(vw_tx_pin, OUTPUT);
-	pinMode(vw_rx_pin, INPUT);
-	pinMode(vw_ptt_pin, OUTPUT);
-	digitalWrite(vw_ptt_pin, vw_ptt_inverted);
-}	
-
-#elif defined (ARDUINO) // Arduino specific
 void vw_setup(uint16_t speed)
 {
     uint16_t nticks; // number of prescaled ticks needed
@@ -414,7 +417,34 @@ void vw_setup(uint16_t speed)
     digitalWrite(vw_ptt_pin, vw_ptt_inverted);
 }
 
-#endif // ARDUINO
+#elif defined(MCU_STM32F103RE) // Maple etc
+HardwareTimer timer(MAPLE_TIMER);
+void vw_setup(uint16_t speed)
+{
+    // TO BE DONE
+    // Pause the timer while we're configuring it
+    timer.pause();
+    timer.setPeriod((1000000/8)/speed);
+    // Set up an interrupt on channel 1
+    timer.setChannel1Mode(TIMER_OUTPUT_COMPARE);
+    timer.setCompare(TIMER_CH1, 1);  // Interrupt 1 count after each update
+    void vw_Int_Handler(); // defined below
+    timer.attachCompare1Interrupt(vw_Int_Handler);
+
+    // Refresh the timer's count, prescale, and overflow
+    timer.refresh();
+
+    // Set up digital IO pins
+    pinMode(vw_tx_pin, OUTPUT);
+    pinMode(vw_rx_pin, INPUT);
+    pinMode(vw_ptt_pin, OUTPUT);
+    digitalWrite(vw_ptt_pin, vw_ptt_inverted);
+
+    // Start the timer counting
+    timer.resume();
+}
+
+#endif
 
 // Start the transmitter, call when the tx buffer is ready to go and vw_tx_len is
 // set to the total number of symbols to send
@@ -631,7 +661,8 @@ SIGNAL(TIMER1_COMPA_vect)
     if (vw_rx_enabled && !vw_tx_enabled)
 	vw_pll();
 }
-#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
+ // LaunchPad or Maple:
+#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) || defined(MCU_STM32F103RE)
 void vw_Int_Handler()
 {
     if (vw_rx_enabled && !vw_tx_enabled)
@@ -666,11 +697,14 @@ void vw_Int_Handler()
     if (vw_rx_enabled && !vw_tx_enabled)
 	vw_pll();
 }
-
+#if defined(__MSP430G2452__) || defined(__MSP430G2553__)
 interrupt(TIMER0_A0_VECTOR) Timer_A_int(void) 
 {
     vw_Int_Handler();
 };
+#endif
+#elif defined(MCU_STM32F103RE) // Maple etc
+
 
 #endif
 

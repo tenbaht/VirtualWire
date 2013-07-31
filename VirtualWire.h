@@ -1,22 +1,23 @@
 // VirtualWire.h
 //
-// Virtual Wire implementation for Arduino
-// See the README file in this directory fdor documentation
+// Virtual Wire implementation for Arduino and other boards
+// See the README file in this directory for documentation
 // 
 // Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
 // $Id: VirtualWire.h,v 1.8 2013/06/25 22:26:15 mikem Exp mikem $
 
-/// \mainpage VirtualWire library for Arduino
+/// \mainpage VirtualWire library for Arduino and other boards
 ///
-/// This is the Arduino VirtualWire library.
+/// This is the VirtualWire library.
 ///
-/// VirtualWire is an Arduino library that provides features to send short
+/// VirtualWire is an library for Arduino, Maple and others that provides features to send short
 /// messages, without addressing, retransmit or acknowledgment, a bit like UDP
 /// over wireless, using ASK (amplitude shift keying). Supports a number of
 /// inexpensive radio transmitters and receivers. All that is required is
 /// transmit data, receive data and (for transmitters, optionally) a PTT
-/// transmitter enable.
+/// transmitter enable. Can also be used over various analog connections (not just a data radio), 
+/// such as the audio channel of an A/V sender
 ///
 /// It is intended to be compatible with the RF Monolithics (www.rfm.com)
 /// Virtual Wire protocol, but this has not been tested.
@@ -25,7 +26,7 @@
 /// message length and checksum. Messages are sent with 4-to-6 bit encoding
 /// for good DC balance, and a CRC checksum for message integrity.
 ///
-/// Why not just use the Arduino UART connected directly to the
+/// Why not just use a UART connected directly to the
 /// transmitter/receiver? As discussed in the RFM documentation, ASK receivers
 /// require a burst of training pulses to synchronize the transmitter and
 /// receiver, and also requires good balance between 0s and 1s in the message
@@ -39,7 +40,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.17.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.18.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -55,6 +56,7 @@
 /// ATMega328 (courtesy Yannick DEVOS - XV4Y), but untested by us.
 /// It also runs on Teensy 3.0 (courtesy of Paul Stoffregen), but untested by us.
 /// Also compiles and runs on ATtiny85 in Arduino environment, courtesy r4z0r7o3.
+/// Also compiles on maple-ide-v0.0.12, and runs on Maple, flymaple 1.1 etc.
 ///
 /// - Receivers
 ///  - RX-B1 (433.92MHz) (also known as ST-RX04-ASK)
@@ -62,6 +64,20 @@
 ///  - TX-C1 (433.92MHz)
 /// - Transceivers
 ///  - DR3100 (433.92MHz)
+///
+/// For testing purposes you can connect 2 VirtualWire instances directly, by
+/// connecting pin 12 of one to 11 of the other and vice versa, like this for a duplex connection:
+///
+/// <code>
+/// Arduino 1         wires         Arduino 1
+///  D11-----------------------------D12
+///  D12-----------------------------D11
+///  GND-----------------------------GND
+/// </code>
+///
+/// You can also connect 2 VirtualWire instances over a suitable analog
+/// transmitter/receiver, such as the audio channel of an A/V transmitter/receiver. You may need
+/// buffers at each end of the connection to convert the 0-5V digital output to a suitable analog voltage.
 ///
 /// \par Installation
 /// To install, unzip the library into the libraries sub-directory of your
@@ -121,6 +137,8 @@
 /// \version 1.16 Added support for Teensy 3.0, contributed by Paul Stoffregen.
 /// \version 1.17 Increase default MAX_MESSAGE_LENGTH to 80. Added vw_get_rx_good() and vw_get_rx_bad()
 ///               functions.
+/// \version 1.18 Added support for Maple, Flymaple etc with STM32F103RE processor using timer 1.
+///               Tested with Flymaple 1.1 and maple-ide-v0.0.12
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
@@ -154,6 +172,12 @@
 #elif defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
  #include "legacymsp430.h"
  #include "Energia.h"
+#elif defined(MCU_STM32F103RE) // Maple etc
+ #include <wirish.h>
+ #include <string.h>
+ #include <stdint.h>
+// Defines which timer to use on Maple
+#define MAPLE_TIMER 1
 #else // error
  #error Platform not defined
 #endif
