@@ -14,7 +14,7 @@
 //
 // Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.11 2013/06/25 22:26:15 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.13 2013/08/06 23:43:41 mikem Exp mikem $
 
 
 #if defined(ARDUINO)
@@ -61,6 +61,7 @@ static uint8_t vw_ptt_inverted = 0;
 
 // The digital IO pin number of the receiver data
 static uint8_t vw_rx_pin = 11;
+static uint8_t vw_rx_inverted = 0;
 
 // The digital IO pin number of the transmitter data
 static uint8_t vw_tx_pin = 12;
@@ -159,6 +160,12 @@ void vw_set_tx_pin(uint8_t pin)
 void vw_set_rx_pin(uint8_t pin)
 {
     vw_rx_pin = pin;
+}
+
+// Set the rx pin inverted 
+void vw_set_rx_inverted(uint8_t inverted)
+{
+    vw_rx_inverted = inverted;
 }
 
 // Set the output pin number for transmitter PTT enable
@@ -421,7 +428,12 @@ void vw_setup(uint16_t speed)
 HardwareTimer timer(MAPLE_TIMER);
 void vw_setup(uint16_t speed)
 {
-    // TO BE DONE
+    // Set up digital IO pins
+    pinMode(vw_tx_pin, OUTPUT);
+    pinMode(vw_rx_pin, INPUT);
+    pinMode(vw_ptt_pin, OUTPUT);
+    digitalWrite(vw_ptt_pin, vw_ptt_inverted);
+
     // Pause the timer while we're configuring it
     timer.pause();
     timer.setPeriod((1000000/8)/speed);
@@ -433,12 +445,6 @@ void vw_setup(uint16_t speed)
 
     // Refresh the timer's count, prescale, and overflow
     timer.refresh();
-
-    // Set up digital IO pins
-    pinMode(vw_tx_pin, OUTPUT);
-    pinMode(vw_rx_pin, INPUT);
-    pinMode(vw_ptt_pin, OUTPUT);
-    digitalWrite(vw_ptt_pin, vw_ptt_inverted);
 
     // Start the timer counting
     timer.resume();
@@ -490,7 +496,7 @@ void vw_rx_stop()
 }
 
 // Return true if the transmitter is active
-uint8_t vx_tx_active()
+uint8_t vw_tx_active()
 {
     return vw_tx_enabled;
 }
@@ -624,13 +630,12 @@ uint8_t vw_get_rx_bad()
 #ifdef __AVR_ATtiny85__
 SIGNAL(TIM0_COMPA_vect)
 #else // Assume Arduino Uno (328p or similar)
-
 SIGNAL(TIMER1_COMPA_vect)
 #endif // __AVR_ATtiny85__
 
 {
     if (vw_rx_enabled && !vw_tx_enabled)
-	vw_rx_sample = digitalRead(vw_rx_pin);
+	vw_rx_sample = digitalRead(vw_rx_pin) ^ vw_rx_inverted;
     
     // Do transmitter stuff first to reduce transmitter bit jitter due 
     // to variable receiver processing
@@ -666,7 +671,7 @@ SIGNAL(TIMER1_COMPA_vect)
 void vw_Int_Handler()
 {
     if (vw_rx_enabled && !vw_tx_enabled)
-	vw_rx_sample = digitalRead(vw_rx_pin);
+	vw_rx_sample = digitalRead(vw_rx_pin) ^ vw_rx_inverted;
     
     // Do transmitter stuff first to reduce transmitter bit jitter due 
     // to variable receiver processing
@@ -703,8 +708,6 @@ interrupt(TIMER0_A0_VECTOR) Timer_A_int(void)
     vw_Int_Handler();
 };
 #endif
-#elif defined(MCU_STM32F103RE) // Maple etc
-
 
 #endif
 

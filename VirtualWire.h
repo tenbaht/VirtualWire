@@ -5,7 +5,7 @@
 // 
 // Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.8 2013/06/25 22:26:15 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.10 2013/08/06 23:43:41 mikem Exp mikem $
 
 /// \mainpage VirtualWire library for Arduino and other boards
 ///
@@ -40,7 +40,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.18.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.19.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -139,6 +139,9 @@
 ///               functions.
 /// \version 1.18 Added support for Maple, Flymaple etc with STM32F103RE processor using timer 1.
 ///               Tested with Flymaple 1.1 and maple-ide-v0.0.12
+/// \version 1.19 Added new function vw_rx_inverted(), to allow the incoming RX to be inverted (normally high).
+///               Minor improvements to timer setup for Maple. Name vw_tx_active() changed from incorrect
+///               vx_tx_active()
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
@@ -240,6 +243,13 @@ extern "C"
     /// \param[in] pin The Arduino pin number for receiving data. Defaults to 11.
     extern void vw_set_rx_pin(uint8_t pin);
 
+    /// By default the RX pin is expected to be low when idle, and to pulse high 
+    /// for each data pulse.
+    /// This flag forces it to be inverted. This may be necessary if your transport medium
+    /// inverts the logic of your signal, such as happens with some types of A/V tramsmitter.
+    /// \param[in] inverted True to invert sense of receiver input
+    extern void vw_set_rx_inverted(uint8_t inverted);
+
     // Set the digital IO pin to enable the transmitter (press to talk, PTT)'
     /// This pin will only be accessed if
     /// the transmitter is enabled
@@ -271,7 +281,7 @@ extern "C"
     /// Returns the state of the
     /// transmitter
     /// \return true if the transmitter is active else false
-    extern uint8_t vx_tx_active();
+    extern uint8_t vw_tx_active();
 
     /// Block until the transmitter is idle
     /// then returns
