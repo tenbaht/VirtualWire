@@ -40,7 +40,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.19.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.20.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -142,6 +142,7 @@
 /// \version 1.19 Added new function vw_rx_inverted(), to allow the incoming RX to be inverted (normally high).
 ///               Minor improvements to timer setup for Maple. Name vw_tx_active() changed from incorrect
 ///               vx_tx_active()
+/// \version 1.20 Added support for ATtiny84, patched by Chuck Benedict.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf

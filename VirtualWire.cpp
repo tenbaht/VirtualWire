@@ -14,7 +14,7 @@
 //
 // Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.13 2013/08/06 23:43:41 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.14 2013/10/05 21:34:35 mikem Exp mikem $
 
 
 #if defined(ARDUINO)
@@ -391,7 +391,7 @@ void vw_setup(uint16_t speed)
 #else // ARDUINO
     // This is the path for most Arduinos
     // figure out prescaler value and counter match value
-    prescaler = _timer_calc(speed, (uint16_t)-1, &nticks);
+    prescaler = _timer_calc(speed, (uint16_t)-1, &nticks);    
     if (!prescaler)
     {
         return; // fault
@@ -627,13 +627,18 @@ uint8_t vw_get_rx_bad()
 //ISR(SIG_OUTPUT_COMPARE1A)
 #if defined (ARDUINO) // Arduino specific
 
+#undef TIMER_VECTOR
 #ifdef __AVR_ATtiny85__
-SIGNAL(TIM0_COMPA_vect)
+  #define TIMER_VECTOR TIM0_COMPA_vect
+#elif defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) // Why can't Atmel make consistent?
+  #define TIMER_VECTOR TIM1_COMPA_vect
 #else // Assume Arduino Uno (328p or similar)
-SIGNAL(TIMER1_COMPA_vect)
+  #define TIMER_VECTOR TIMER1_COMPA_vect
 #endif // __AVR_ATtiny85__
 
+ISR(TIMER_VECTOR)
 {
+
     if (vw_rx_enabled && !vw_tx_enabled)
 	vw_rx_sample = digitalRead(vw_rx_pin) ^ vw_rx_inverted;
     
