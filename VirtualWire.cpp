@@ -4,7 +4,7 @@
 //
 // Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.15 2014/02/23 22:51:49 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.16 2014/02/24 09:07:58 mikem Exp mikem $
 
 #include "VirtualWire.h"
 #include <util/crc16.h>
@@ -417,11 +417,11 @@ uint8_t vw_timer_calc(uint16_t speed, uint16_t max_ticks, uint16_t *nticks)
     for (prescaler=1; prescaler < 7; prescaler += 1)
     {
         // Amount of time per CPU clock tick (in seconds)
-        float clock_time = (1.0 / (float(F_CPU) / float(prescalers[prescaler])));
+        float clock_time = (1.0 / ((float)F_CPU / (float)prescalers[prescaler]));
         // Fraction of second needed to xmit one bit
-        float bit_time = ((1.0 / float(speed)) / 8.0);
+        float bit_time = ((1.0 / (float)speed) / 8.0);
         // number of prescaled ticks needed to handle bit time @ speed
-        ulticks = long(bit_time / clock_time);
+        ulticks = (long)(bit_time / clock_time);
         // Test if ulticks fits in nticks bitwidth (with 1-tick safety margin)
         if ((ulticks > 1) && (ulticks < max_ticks))
         {
@@ -777,7 +777,7 @@ ISR(VW_TIMER_VECTOR)
 {
 
     if (vw_rx_enabled && !vw_tx_enabled)
-	vw_rx_sample = digitalRead(vw_rx_pin) ^ vw_rx_inverted;
+	vw_rx_sample = vw_digitalRead_rx() ^ vw_rx_inverted;
     
     // Do transmitter stuff first to reduce transmitter bit jitter due 
     // to variable receiver processing
@@ -794,7 +794,7 @@ ISR(VW_TIMER_VECTOR)
 	}
 	else
 	{
-	    digitalWrite(vw_tx_pin, vw_tx_buf[vw_tx_index] & (1 << vw_tx_bit++));
+	    vw_digitalWrite_tx(vw_tx_buf[vw_tx_index] & (1 << vw_tx_bit++));
 	    if (vw_tx_bit >= 6)
 	    {
 		vw_tx_bit = 0;
@@ -815,7 +815,7 @@ ISR(VW_TIMER_VECTOR)
 void vw_Int_Handler()
 {
     if (vw_rx_enabled && !vw_tx_enabled)
-	vw_rx_sample = digitalRead(vw_rx_pin) ^ vw_rx_inverted;
+	vw_rx_sample = vw_digitalRead_rx() ^ vw_rx_inverted;
     
     // Do transmitter stuff first to reduce transmitter bit jitter due 
     // to variable receiver processing
@@ -832,7 +832,7 @@ void vw_Int_Handler()
 	}
 	else
 	{
-	    digitalWrite(vw_tx_pin, vw_tx_buf[vw_tx_index] & (1 << vw_tx_bit++));
+	    vw_digitalWrite_tx(vw_tx_buf[vw_tx_index] & (1 << vw_tx_bit++));
 	    if (vw_tx_bit >= 6)
 	    {
 		vw_tx_bit = 0;

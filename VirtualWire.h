@@ -5,7 +5,7 @@
 // 
 // Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.11 2014/02/23 22:51:49 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.12 2014/02/24 09:07:58 mikem Exp mikem $
 
 /// \mainpage VirtualWire library for Arduino and other boards
 ///
@@ -40,7 +40,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.21.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.22.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -61,6 +61,14 @@
 /// It also runs on Teensy 3.0 (courtesy of Paul Stoffregen), but untested by us.
 /// Also compiles and runs on ATtiny85 in Arduino environment, courtesy r4z0r7o3.
 /// Also compiles on maple-ide-v0.0.12, and runs on Maple, flymaple 1.1 etc.
+///
+/// Runs on ATmega8/168 (Arduino Diecimila, Uno etc), ATmega328 and can
+/// virtually run on any other AVR8 platform, without relying on Arduino
+/// framework for that, by properly configuring the library using
+/// 'VirtualWire_Config.h' header file for describing the access to IO pins and
+/// for setting up the timer. From version 1.21 the library can be compiled by
+/// a C compiler (by renaming VirtualWire.cpp into VirtualWire.c) and can be
+/// easily integrated with other IDEs like 'Atmel Studio' for example."
 ///
 /// - Receivers
 ///  - RX-B1 (433.92MHz) (also known as ST-RX04-ASK)
@@ -150,6 +158,7 @@
 /// \version 1.21 Added support for most AVR8 platforms with proper configuration, without depending
 ///               on Arduino environment, such as Atmega32u2, Atmega32U4, At90USB162 etc, 
 ///               contributed by Alexandru Daniel Mircescu. 
+/// \version 1.22 Alexandru Daniel Mircescu fixed some problems with the recently added AtMega32U2 support.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
@@ -208,7 +217,7 @@
 	#include <stdint.h>
 	// Defines which timer to use on Maple
 	#define MAPLE_TIMER 1
-#else 
+#elif (VW_PLATFORM != VW_PLATFORM_GENERIC_AVR8) 
 	#error Platform unknown!
 #endif
 
