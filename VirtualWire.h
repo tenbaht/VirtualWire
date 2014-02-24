@@ -40,7 +40,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.22.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.23.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
@@ -48,27 +48,31 @@
 /// Do not contact the author directly, unless it is to discuss commercial licensing.
 ///
 /// \par Theory of operation
+///
 /// See ASH Transceiver Software Designer's Guide of 2002.08.07
 ///   http://www.rfm.com/products/apnotes/tr_swg05.pdf
 ///
 /// \par Supported Hardware
-/// A range of communications hardware is supported. The ones listed below are
-/// available in common retail outlets in Australian and other countries for
-/// under $10 per unit. Many other modules may also work with this software.
-/// Runs on ATmega8/168 (Arduino Diecimila, Uno etc) and ATmega328 and possibly
-/// others. Also runs on on Energia with MSP430G2553 / G2452 and Arduino with 
-/// ATMega328 (courtesy Yannick DEVOS - XV4Y), but untested by us.
-/// It also runs on Teensy 3.0 (courtesy of Paul Stoffregen), but untested by us.
-/// Also compiles and runs on ATtiny85 in Arduino environment, courtesy r4z0r7o3.
-/// Also compiles on maple-ide-v0.0.12, and runs on Maple, flymaple 1.1 etc.
 ///
-/// Runs on ATmega8/168 (Arduino Diecimila, Uno etc), ATmega328 and can
-/// virtually run on any other AVR8 platform, without relying on Arduino
-/// framework for that, by properly configuring the library using
-/// 'VirtualWire_Config.h' header file for describing the access to IO pins and
-/// for setting up the timer. From version 1.21 the library can be compiled by
-/// a C compiler (by renaming VirtualWire.cpp into VirtualWire.c) and can be
-/// easily integrated with other IDEs like 'Atmel Studio' for example."
+/// A range of communications
+/// hardware is supported. The ones listed below are available in common retail
+/// outlets in Australian and other countries for under $10 per unit. Many
+/// other modules may also work with this software. 
+///
+/// Runs on a wide range of Arduino processors.
+/// Also runs on on Energia
+/// with MSP430G2553 / G2452 and Arduino with ATMega328 (courtesy Yannick DEVOS - XV4Y), 
+/// but untested by us. It also runs on Teensy 3.0 (courtesy of Paul
+/// Stoffregen), but untested by us. Also compiles and runs on ATtiny85 in
+/// Arduino environment, courtesy r4z0r7o3. Also compiles on maple-ide-v0.0.12,
+/// and runs on Maple, flymaple 1.1 etc. Runs on ATmega8/168 (Arduino Diecimila,
+/// Uno etc), ATmega328 and can run on almost any other AVR8 platform,
+/// without relying on the Arduino framework, by properly configuring the
+/// library using 'VirtualWire_Config.h' header file for describing the access
+/// to IO pins and for setting up the timer. From version 1.22 the library can
+/// be compiled by a C compiler (by renaming VirtualWire.cpp into
+/// VirtualWire.c) and can be easily integrated with other IDEs like 'Atmel
+/// Studio' for example (courtesy of Alexandru Mircescu).
 ///
 /// - Receivers
 ///  - RX-B1 (433.92MHz) (also known as ST-RX04-ASK)
@@ -81,10 +85,12 @@
 /// connecting pin 12 of one to 11 of the other and vice versa, like this for a duplex connection:
 ///
 /// <code>
+/// <pre>
 /// Arduino 1         wires         Arduino 1
 ///  D11-----------------------------D12
 ///  D12-----------------------------D11
 ///  GND-----------------------------GND
+/// </pre>
 /// </code>
 ///
 /// You can also connect 2 VirtualWire instances over a suitable analog
@@ -92,6 +98,7 @@
 /// buffers at each end of the connection to convert the 0-5V digital output to a suitable analog voltage.
 ///
 /// \par Installation
+///
 /// To install, unzip the library into the libraries sub-directory of your
 /// Arduino application directory. Then launch the Arduino environment; you
 /// should see the library in the Sketch->Import Library menu, and example
@@ -159,6 +166,8 @@
 ///               on Arduino environment, such as Atmega32u2, Atmega32U4, At90USB162 etc, 
 ///               contributed by Alexandru Daniel Mircescu. 
 /// \version 1.22 Alexandru Daniel Mircescu fixed some problems with the recently added AtMega32U2 support.
+/// \version 1.23 Fixed some errors an inaccuracies in documentatiopn, with the kind assistance of Alexandru
+///               Mircescu.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
