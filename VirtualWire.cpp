@@ -1,38 +1,143 @@
 // VirtualWire.cpp
 //
 // Virtual Wire implementation for Arduino
-// See the README file in this directory fdor documentation
-// See also
-// ASH Transceiver Software Designer's Guide of 2002.08.07
-//   http://www.rfm.com/products/apnotes/tr_swg05.pdf
-//
-// Changes:
-// 1.5 2008-05-25: fixed a bug that could prevent messages with certain
-//  bytes sequences being received (false message start detected)
-// 1.6 2011-09-10: Patch from David Bath to prevent unconditional reenabling of the receiver
-//  at end of transmission.
 //
 // Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.14 2013/10/05 21:34:35 mikem Exp mikem $
-
-
-#if defined(ARDUINO)
- #if (ARDUINO < 100)
-  #include "WProgram.h"
- #endif
-#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
- #include "legacymsp430.h"
- #include "Energia.h"
-#elif defined(MCU_STM32F103RE) // Maple etc
-#include <string.h>
-#else // error
- #error Platform not defined
-#endif
+// $Id: VirtualWire.cpp,v 1.15 2014/02/23 22:51:49 mikem Exp mikem $
 
 #include "VirtualWire.h"
 #include <util/crc16.h>
 
+//	Platform specific dependencies
+#if (VW_PLATFORM == VW_PLATFORM_ARDUINO)
+	#if (ARDUINO < 100)
+		#include <WProgram.h>
+	#endif
+#elif (VW_PLATFORM == VW_PLATFORM_MSP430)
+	#include "legacymsp430.h"
+	#include "Energia.h"
+#elif (VW_PLATFORM == VW_PLATFORM_STM32)
+	#include <string.h>
+	#include <wirish.h>	
+#elif (VW_PLATFORM == VW_PLATFORM_GENERIC_AVR8)	
+	#include <avr/io.h>
+	#include <avr/interrupt.h>
+	#include <util/delay.h>
+	#include <string.h>
+	#include <stdbool.h>
+#endif
+
+/// Outgoing message bits grouped as 6-bit words
+/// 36 alternating 1/0 bits, followed by 12 bits of start symbol
+/// Followed immediately by the 4-6 bit encoded byte count,
+/// message buffer and 2 byte FCS
+/// Each byte from the byte count on is translated into 2x6-bit words
+/// Caution, each symbol is transmitted LSBit first,
+/// but each byte is transmitted high nibble first
+#define VW_HEADER_LEN 8
+
+//	Define digitalRead, digitalWrite and digital pins for Arduino like platforms
+#if (VW_PLATFORM != VW_PLATFORM_GENERIC_AVR8 )
+	#define vw_digitalRead_rx() digitalRead(vw_rx_pin)
+	#define vw_digitalWrite_tx(value) digitalWrite(vw_tx_pin,(value))
+	#define vw_digitalWrite_ptt(value) digitalWrite(vw_ptt_pin,(value))
+	
+	// The digital IO pin number of the press to talk, enables the transmitter hardware
+	static uint8_t vw_ptt_pin = 10;	
+	
+	// The digital IO pin number of the receiver data
+	static uint8_t vw_rx_pin = 11;
+	
+	// The digital IO pin number of the transmitter data
+	static uint8_t vw_tx_pin = 12;
+	
+//	Prepare VirtualWire for generic AVR8 configurations
+#elif (VW_PLATFORM == VW_PLATFORM_GENERIC_AVR8)
+
+#define __COMB(a,b,c) (a##b##c)
+#define _COMB(a,b,c) __COMB(a,b,c)
+
+	//	IO pin setup if PTT is defined by config
+	#ifdef VW_PTT_PIN 
+	
+		#ifndef vw_pinSetup
+			#define vw_pinSetup()\
+				VW_PTT_DDR  |=  (1<<VW_PTT_PIN);\
+				VW_TX_DDR   |=  (1<<VW_TX_PIN);\
+				VW_RX_DDR   &= ~(1<<VW_RX_PIN);
+		#endif
+	
+		#ifndef vw_digitalWrite_ptt
+			#define vw_digitalWrite_ptt(value) \
+				((value) ? (VW_PTT_PORT |= (1<<VW_PTT_PIN)) : (VW_PTT_PORT &= ~(1<<VW_PTT_PIN)) )
+		#endif
+		
+	#else	
+	//	IO pin setup if no PTT is defined by config	
+	
+		#ifndef vw_pinSetup
+			#define vw_pinSetup()\
+				VW_TX_DDR   |=  (1<<VW_TX_PIN); \
+				VW_RX_DDR   &= ~(1<<VW_RX_PIN);
+		#endif
+	
+		#ifndef vw_digitalWrite_ptt
+			#define vw_digitalWrite_ptt(value)	
+		#endif
+	#endif
+
+	//	If the user defined vw_digitalWrite_tx, then no default implementation will be provided
+	#ifndef vw_digitalWrite_tx
+		#define vw_digitalWrite_tx(value)\
+			((value) ? (VW_TX_PORT |= (1<<VW_TX_PIN)) : (VW_TX_PORT &= ~(1<<VW_TX_PIN)))
+	#endif
+	
+	//	If the user defined vw_digitalRead_rx, then no default implementation will be provided
+	#ifndef vw_digitalRead_rx
+		#define vw_digitalRead_rx()\
+			((VW_RX_PORT & (1<<VW_RX_PIN)) ? 1 : 0) 
+	#endif
+		
+	#define vw_delay_1ms()\
+		_delay_ms(1.0f)
+		
+	//	If the user defined the interrupt vector, don't overwrite the config
+	#ifndef VW_TIMER_VECTOR 
+		#define VW_TIMER_VECTOR _COMB(TIMER,VW_TIMER_INDEX,_COMPA_vect)
+	#endif
+
+	//	If the user already defined a timer setup routine, don't overwrite the config
+	#ifndef vw_timerSetup
+		#define vw_timerSetup(speed) \
+			uint16_t nticks; \
+			uint8_t prescaler; \
+			prescaler = vw_timer_calc(speed, (uint16_t)-1, &nticks);\
+			if (!prescaler) return; \
+			_COMB(TCCR,VW_TIMER_INDEX,A)= 0; \
+			_COMB(TCCR,VW_TIMER_INDEX,B)= _BV(WGM12); \
+			_COMB(TCCR,VW_TIMER_INDEX,B)|= prescaler; \
+			_COMB(OCR,VW_TIMER_INDEX,A)= nticks; \
+			_COMB(TI,MSK,VW_TIMER_INDEX)|= _BV(_COMB(OCIE,VW_TIMER_INDEX,A));
+	#endif
+#endif
+
+// VirtualWire events
+#ifndef vw_event_tx_done
+	#define vw_event_tx_done()
+#endif
+
+#ifndef vw_event_rx_done
+	#define vw_event_rx_done(message,length)
+#endif
+
+#ifndef vw_event_rx_byte
+	#define vw_event_rx_byte_internal(byte)
+#else 
+	#define vw_event_rx_byte_internal(byte)\
+		if( vw_rx_len != 0 && vw_rx_len <= vw_rx_count-3 )\
+			vw_event_rx_byte(byte,vw_rx_len-1,vw_rx_count-3);	
+#endif
 
 static uint8_t vw_tx_buf[(VW_MAX_MESSAGE_LEN * 2) + VW_HEADER_LEN] 
      = {0x2a, 0x2a, 0x2a, 0x2a, 0x2a, 0x2a, 0x38, 0x2c};
@@ -55,16 +160,9 @@ static volatile uint8_t vw_tx_enabled = 0;
 // Total number of messages sent
 static uint16_t vw_tx_msg_count = 0;
 
-// The digital IO pin number of the press to talk, enables the transmitter hardware
-static uint8_t vw_ptt_pin = 10;
 static uint8_t vw_ptt_inverted = 0;
 
-// The digital IO pin number of the receiver data
-static uint8_t vw_rx_pin = 11;
 static uint8_t vw_rx_inverted = 0;
-
-// The digital IO pin number of the transmitter data
-static uint8_t vw_tx_pin = 12;
 
 // Current receiver sample
 static uint8_t vw_rx_sample = 0;
@@ -82,7 +180,7 @@ static uint8_t vw_rx_pll_ramp = 0;
 // the bit is declared a 0, else a 1
 static uint8_t vw_rx_integrator = 0;
 
-// Flag indictate if we have seen the start symbol of a new message and are
+// Flag indicates if we have seen the start symbol of a new message and are
 // in the processes of reading and decoding it
 static uint8_t vw_rx_active = 0;
 
@@ -123,10 +221,12 @@ static uint8_t symbols[] =
     0x23, 0x25, 0x26, 0x29, 0x2a, 0x2c, 0x32, 0x34
 };
 
+#ifdef __cplusplus
 // Cant really do this as a real C++ class, since we need to have 
 // an ISR
-extern "C"
+extern "C" 
 {
+#endif //__cplusplus
 
 // Compute CRC over count bytes.
 // This should only be ever called at user level, not interrupt level
@@ -150,22 +250,30 @@ uint8_t vw_symbol_6to4(uint8_t symbol)
     return 0; // Not found
 }
 
+// Set the rx pin inverted 
+void vw_set_rx_inverted(uint8_t inverted)
+{
+    vw_rx_inverted = inverted;
+}
+
+// Set the ptt pin inverted (low to transmit)
+void vw_set_ptt_inverted(uint8_t inverted)
+{
+	vw_ptt_inverted = inverted;
+}
+
+#if (VW_PLATFORM != VW_PLATFORM_GENERIC_AVR8 )
+
 // Set the output pin number for transmitter data
 void vw_set_tx_pin(uint8_t pin)
 {
-    vw_tx_pin = pin;
+	vw_tx_pin = pin;
 }
 
 // Set the pin number for input receiver data
 void vw_set_rx_pin(uint8_t pin)
 {
-    vw_rx_pin = pin;
-}
-
-// Set the rx pin inverted 
-void vw_set_rx_inverted(uint8_t inverted)
-{
-    vw_rx_inverted = inverted;
+	vw_rx_pin = pin;
 }
 
 // Set the output pin number for transmitter PTT enable
@@ -174,11 +282,8 @@ void vw_set_ptt_pin(uint8_t pin)
     vw_ptt_pin = pin;
 }
 
-// Set the ptt pin inverted (low to transmit)
-void vw_set_ptt_inverted(uint8_t inverted)
-{
-    vw_ptt_inverted = inverted;
-}
+#endif
+
 
 // Called 8 times per bit period
 // Phase locked loop tries to synchronise with the transmitter so that bit 
@@ -287,33 +392,13 @@ void vw_pll()
 #endif
 
 
-// Speed is in bits per sec RF rate
-#if defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
-void vw_setup(uint16_t speed)
-{
-	// Calculate the counter overflow count based on the required bit speed
-	// and CPU clock rate
-	uint16_t ocr1a = (F_CPU / 8UL) / speed;
-		
-	// This code is for Energia/MSP430
-	TA0CCR0 = ocr1a;				// Ticks for 62,5 us
-	TA0CTL = TASSEL_2 + MC_1;       // SMCLK, up mode
-	TA0CCTL0 |= CCIE;               // CCR0 interrupt enabled
-		
-	// Set up digital IO pins
-	pinMode(vw_tx_pin, OUTPUT);
-	pinMode(vw_rx_pin, INPUT);
-	pinMode(vw_ptt_pin, OUTPUT);
-	digitalWrite(vw_ptt_pin, vw_ptt_inverted);
-}	
-
-#elif defined (ARDUINO) // Arduino specific
+#if (VW_PLATFORM == VW_PLATFORM_ARDUINO) || (VW_PLATFORM == VW_PLATFORM_GENERIC_AVR8)
 
 // Common function for setting timer ticks @ prescaler values for speed
 // Returns prescaler index into {0, 1, 8, 64, 256, 1024} array
 // and sets nticks to compare-match value if lower than max_ticks
 // returns 0 & nticks = 0 on fault
-static uint8_t _timer_calc(uint16_t speed, uint16_t max_ticks, uint16_t *nticks)
+uint8_t vw_timer_calc(uint16_t speed, uint16_t max_ticks, uint16_t *nticks)
 {
     // Clock divider (prescaler) values - 0/3333: error flag
     uint16_t prescalers[] = {0, 1, 8, 64, 256, 1024, 3333};
@@ -357,6 +442,31 @@ static uint8_t _timer_calc(uint16_t speed, uint16_t max_ticks, uint16_t *nticks)
     return prescaler;
 }
 
+
+#endif
+
+// Speed is in bits per sec RF rate
+#if (VW_PLATFORM == VW_PLATFORM_MSP430) // LaunchPad specific
+void vw_setup(uint16_t speed)
+{
+	// Calculate the counter overflow count based on the required bit speed
+	// and CPU clock rate
+	uint16_t ocr1a = (F_CPU / 8UL) / speed;
+		
+	// This code is for Energia/MSP430
+	TA0CCR0 = ocr1a;				// Ticks for 62,5 us
+	TA0CTL = TASSEL_2 + MC_1;       // SMCLK, up mode
+	TA0CCTL0 |= CCIE;               // CCR0 interrupt enabled
+		
+	// Set up digital IO pins
+	pinMode(vw_tx_pin, OUTPUT);
+	pinMode(vw_rx_pin, INPUT);
+	pinMode(vw_ptt_pin, OUTPUT);
+	vw_digitalWrite_ptt( vw_ptt_inverted);
+}	
+
+#elif (VW_PLATFORM == VW_PLATFORM_ARDUINO) // Arduino specific
+
 void vw_setup(uint16_t speed)
 {
     uint16_t nticks; // number of prescaled ticks needed
@@ -364,7 +474,7 @@ void vw_setup(uint16_t speed)
 
 #ifdef __AVR_ATtiny85__
     // figure out prescaler value and counter match value
-    prescaler = _timer_calc(speed, (uint8_t)-1, &nticks);
+    prescaler = vw_timer_calc(speed, (uint8_t)-1, &nticks);
     if (!prescaler)
     {
         return; // fault
@@ -391,7 +501,7 @@ void vw_setup(uint16_t speed)
 #else // ARDUINO
     // This is the path for most Arduinos
     // figure out prescaler value and counter match value
-    prescaler = _timer_calc(speed, (uint16_t)-1, &nticks);    
+    prescaler = vw_timer_calc(speed, (uint16_t)-1, &nticks);    
     if (!prescaler)
     {
         return; // fault
@@ -421,10 +531,10 @@ void vw_setup(uint16_t speed)
     pinMode(vw_tx_pin, OUTPUT);
     pinMode(vw_rx_pin, INPUT);
     pinMode(vw_ptt_pin, OUTPUT);
-    digitalWrite(vw_ptt_pin, vw_ptt_inverted);
+    vw_digitalWrite_ptt(vw_ptt_inverted);
 }
 
-#elif defined(MCU_STM32F103RE) // Maple etc
+#elif (VW_PLATFORM == VW_PLATFORM_STM32) // Maple etc
 HardwareTimer timer(MAPLE_TIMER);
 void vw_setup(uint16_t speed)
 {
@@ -432,7 +542,7 @@ void vw_setup(uint16_t speed)
     pinMode(vw_tx_pin, OUTPUT);
     pinMode(vw_rx_pin, INPUT);
     pinMode(vw_ptt_pin, OUTPUT);
-    digitalWrite(vw_ptt_pin, vw_ptt_inverted);
+    vw_digitalWrite_ptt(vw_ptt_inverted);
 
     // Pause the timer while we're configuring it
     timer.pause();
@@ -449,7 +559,13 @@ void vw_setup(uint16_t speed)
     // Start the timer counting
     timer.resume();
 }
-
+#elif (VW_PLATFORM == VW_PLATFORM_GENERIC_AVR8)
+void vw_setup(uint16_t speed)
+{
+	vw_pinSetup();
+	vw_digitalWrite_ptt(vw_ptt_inverted);
+	vw_timerSetup(speed);
+}
 #endif
 
 // Start the transmitter, call when the tx buffer is ready to go and vw_tx_len is
@@ -461,7 +577,7 @@ void vw_tx_start()
     vw_tx_sample = 0;
 
     // Enable the transmitter hardware
-    digitalWrite(vw_ptt_pin, true ^ vw_ptt_inverted);
+    vw_digitalWrite_ptt( true ^ vw_ptt_inverted);
 
     // Next tick interrupt will send the first bit
     vw_tx_enabled = true;
@@ -471,8 +587,8 @@ void vw_tx_start()
 void vw_tx_stop()
 {
     // Disable the transmitter hardware
-    digitalWrite(vw_ptt_pin, false ^ vw_ptt_inverted);
-    digitalWrite(vw_tx_pin, false);
+    vw_digitalWrite_ptt(false ^ vw_ptt_inverted);
+    vw_digitalWrite_tx(false);
 
     // No more ticks for the transmitter
     vw_tx_enabled = false;
@@ -484,8 +600,8 @@ void vw_rx_start()
 {
     if (!vw_rx_enabled)
     {
-	vw_rx_enabled = true;
-	vw_rx_active = false; // Never restart a partial message
+		vw_rx_enabled = true;
+		vw_rx_active = false; // Never restart a partial message
     }
 }
 
@@ -518,6 +634,8 @@ void vw_wait_rx()
 	;
 }
 
+#if (VW_PLATFORM != VW_PLATFORM_GENERIC_AVR8 )
+
 // Wait at most max milliseconds for the receiver to receive a message
 // Return the truth of whether there is a message
 uint8_t vw_wait_rx_max(unsigned long milliseconds)
@@ -528,6 +646,25 @@ uint8_t vw_wait_rx_max(unsigned long milliseconds)
 	;
     return vw_rx_done;
 }
+
+#else
+
+// Wait at most max milliseconds for the receiver to receive a message
+// Return the truth of whether there is a message
+uint8_t vw_wait_rx_max(unsigned long milliseconds)
+{
+	while( milliseconds -- )
+	{
+		if( vw_rx_done )
+			break;
+			
+		vw_delay_1ms();
+	}
+	
+	return vw_rx_done;
+}
+
+#endif 
 
 // Wait until transmitter is available and encode and queue the message
 // into vw_tx_buf
@@ -621,22 +758,22 @@ uint8_t vw_get_rx_bad()
     return vw_rx_bad;
 }
 
+#if (VW_PLATFORM == VW_PLATFORM_ARDUINO) 
+	#if __AVR_ATtiny85__
+		#define VW_TIMER_VECTOR TIM0_COMPA_vect
+	#elif defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) // Why can't Atmel make consistent?
+		#define VW_TIMER_VECTOR TIM1_COMPA_vect
+	#else // Assume Arduino Uno (328p or similar)
+		#define VW_TIMER_VECTOR TIMER1_COMPA_vect
+	#endif // __AVR_ATtiny85__
+#endif
+	
+#if (VW_PLATFORM == VW_PLATFORM_ARDUINO) || (VW_PLATFORM == VW_PLATFORM_GENERIC_AVR8)
 // This is the interrupt service routine called when timer1 overflows
 // Its job is to output the next bit from the transmitter (every 8 calls)
 // and to call the PLL code if the receiver is enabled
 //ISR(SIG_OUTPUT_COMPARE1A)
-#if defined (ARDUINO) // Arduino specific
-
-#undef TIMER_VECTOR
-#ifdef __AVR_ATtiny85__
-  #define TIMER_VECTOR TIM0_COMPA_vect
-#elif defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) // Why can't Atmel make consistent?
-  #define TIMER_VECTOR TIM1_COMPA_vect
-#else // Assume Arduino Uno (328p or similar)
-  #define TIMER_VECTOR TIMER1_COMPA_vect
-#endif // __AVR_ATtiny85__
-
-ISR(TIMER_VECTOR)
+ISR(VW_TIMER_VECTOR)
 {
 
     if (vw_rx_enabled && !vw_tx_enabled)
@@ -671,8 +808,10 @@ ISR(TIMER_VECTOR)
     if (vw_rx_enabled && !vw_tx_enabled)
 	vw_pll();
 }
- // LaunchPad or Maple:
-#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) || defined(MCU_STM32F103RE)
+
+
+ // LaunchPad, Maple
+#elif (VW_PLATFORM == VW_PLATFORM_MSP430) || (VW_PLATFORM == VW_PLATFORM_STM32)
 void vw_Int_Handler()
 {
     if (vw_rx_enabled && !vw_tx_enabled)
@@ -707,7 +846,9 @@ void vw_Int_Handler()
     if (vw_rx_enabled && !vw_tx_enabled)
 	vw_pll();
 }
-#if defined(__MSP430G2452__) || defined(__MSP430G2553__)
+
+
+#if (VW_PLATFORM == VW_PLATFORM_MSP430) 
 interrupt(TIMER0_A0_VECTOR) Timer_A_int(void) 
 {
     vw_Int_Handler();
@@ -716,5 +857,6 @@ interrupt(TIMER0_A0_VECTOR) Timer_A_int(void)
 
 #endif
 
-
-}
+#ifdef __cplusplus
+}	//	extern "C"
+#endif //__cplusplus

@@ -5,7 +5,7 @@
 // 
 // Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.10 2013/08/06 23:43:41 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.11 2014/02/23 22:51:49 mikem Exp mikem $
 
 /// \mainpage VirtualWire library for Arduino and other boards
 ///
@@ -40,12 +40,16 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.20.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.21.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at http://groups.google.com/group/virtualwire
 /// Please use that group for all questions and discussions on this topic. 
 /// Do not contact the author directly, unless it is to discuss commercial licensing.
+///
+/// \par Theory of operation
+/// See ASH Transceiver Software Designer's Guide of 2002.08.07
+///   http://www.rfm.com/products/apnotes/tr_swg05.pdf
 ///
 /// \par Supported Hardware
 /// A range of communications hardware is supported. The ones listed below are
@@ -143,6 +147,9 @@
 ///               Minor improvements to timer setup for Maple. Name vw_tx_active() changed from incorrect
 ///               vx_tx_active()
 /// \version 1.20 Added support for ATtiny84, patched by Chuck Benedict.
+/// \version 1.21 Added support for most AVR8 platforms with proper configuration, without depending
+///               on Arduino environment, such as Atmega32u2, Atmega32U4, At90USB162 etc, 
+///               contributed by Alexandru Daniel Mircescu. 
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
@@ -166,24 +173,43 @@
 #ifndef VirtualWire_h
 #define VirtualWire_h
 
-#include <stdlib.h>
-#if defined(ARDUINO)
- #if ARDUINO >= 100
-  #include <Arduino.h>
- #else
-  #include <wiring.h>
- #endif
-#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) // LaunchPad specific
- #include "legacymsp430.h"
- #include "Energia.h"
-#elif defined(MCU_STM32F103RE) // Maple etc
- #include <wirish.h>
- #include <string.h>
- #include <stdint.h>
-// Defines which timer to use on Maple
-#define MAPLE_TIMER 1
-#else // error
- #error Platform not defined
+#include <stdint.h>
+#include "VirtualWire_Config.h"
+
+//	Currently supported platforms
+#define VW_PLATFORM_ARDUINO 1
+#define VW_PLATFORM_MSP430  2
+#define VW_PLATFORM_STM32   3
+#define VW_PLATFORM_GENERIC_AVR8 4
+
+//	Select platform automatically, if possible
+#ifndef VW_PLATFORM
+	#if defined(ARDUINO)
+		#define VW_PLATFORM VW_PLATFORM_ARDUINO
+	#elif defined(__MSP430G2452__) || defined(__MSP430G2553__)
+		#define VW_PLATFORM VW_PLATFORM_MSP430
+	#elif defined(MCU_STM32F103RE)
+		#define VW_PLATFORM VW_PLATFORM_STM32
+	#else
+		#error Platform not defined! 	
+	#endif
+#endif
+
+#if (VW_PLATFORM == VW_PLATFORM_ARDUINO)
+	#if (ARDUINO >= 100)
+		#include <Arduino.h>
+	 #else
+		#include <wiring.h>
+	#endif
+#elif (VW_PLATFORM == VW_PLATFORM_MSP430)// LaunchPad specific
+	#include "legacymsp430.h"
+	#include "Energia.h"
+#elif (VW_PLATFORM == VW_PLATFORM_STM32) // Maple etc
+	#include <stdint.h>
+	// Defines which timer to use on Maple
+	#define MAPLE_TIMER 1
+#else 
+	#error Platform unknown!
 #endif
 
 // These defs cause trouble on some versions of Arduino
@@ -191,17 +217,21 @@
 #undef double
 #undef round
 
+#ifndef VW_MAX_MESSAGE_LEN 
 /// Maximum number of bytes in a message, counting the byte count and FCS
-#define VW_MAX_MESSAGE_LEN 80
+	#define VW_MAX_MESSAGE_LEN 80
+#endif //VW_MAX_MESSAGE_LEN 
+
+#if !defined(VW_RX_SAMPLES_PER_BIT)
+/// Number of samples per bit
+	#define VW_RX_SAMPLES_PER_BIT 8
+#endif //VW_RX_SAMPLES_PER_BIT  
 
 /// The maximum payload length
 #define VW_MAX_PAYLOAD VW_MAX_MESSAGE_LEN-3
 
-/// The size of the receiver ramp. Ramp wraps modulu this number
+/// The size of the receiver ramp. Ramp wraps modulo this number
 #define VW_RX_RAMP_LEN 160
-
-/// Number of samples per bit
-#define VW_RX_SAMPLES_PER_BIT 8
 
 // Ramp adjustment parameters
 // Standard is if a transition occurs before VW_RAMP_TRANSITION (80) in the ramp,
@@ -230,8 +260,18 @@
 
 // Cant really do this as a real C++ class, since we need to have 
 // an ISR
+#ifdef __cplusplus
 extern "C"
 {
+#endif //__cplusplus
+
+#if (VW_PLATFORM != VW_PLATFORM_GENERIC_AVR8 )
+    // Set the digital IO pin to enable the transmitter (press to talk, PTT)'
+    /// This pin will only be accessed if
+    /// the transmitter is enabled
+    /// \param[in] pin The Arduino pin number to enable the transmitter. Defaults to 10.
+    extern void vw_set_ptt_pin(uint8_t pin);
+    
     /// Set the digital IO pin to be for transmit data. 
     /// This pin will only be accessed if
     /// the transmitter is enabled
@@ -243,6 +283,7 @@ extern "C"
     /// the receiver is enabled
     /// \param[in] pin The Arduino pin number for receiving data. Defaults to 11.
     extern void vw_set_rx_pin(uint8_t pin);
+#endif
 
     /// By default the RX pin is expected to be low when idle, and to pulse high 
     /// for each data pulse.
@@ -250,12 +291,6 @@ extern "C"
     /// inverts the logic of your signal, such as happens with some types of A/V tramsmitter.
     /// \param[in] inverted True to invert sense of receiver input
     extern void vw_set_rx_inverted(uint8_t inverted);
-
-    // Set the digital IO pin to enable the transmitter (press to talk, PTT)'
-    /// This pin will only be accessed if
-    /// the transmitter is enabled
-    /// \param[in] pin The Arduino pin number to enable the transmitter. Defaults to 10.
-    extern void vw_set_ptt_pin(uint8_t pin);
 
     /// By default the PTT pin goes high when the transmitter is enabled.
     /// This flag forces it low when the transmitter is enabled.
@@ -326,7 +361,10 @@ extern "C"
     /// Caution,: this is an 8 bit count and can easily overflow
     /// \return Count of bad messages received
     extern uint8_t vw_get_rx_bad();
-}
+
+#ifdef __cplusplus
+} //	extern "C"
+#endif //__cplusplus
 
 /// @example client.pde
 /// Client side of simple client/server pair using VirtualWire
@@ -340,4 +378,4 @@ extern "C"
 /// @example receiver.pde
 /// Transmitter side of simple one-way transmitter->receiver pair using VirtualWire
 
-#endif
+#endif /* VirtualWire_h */
