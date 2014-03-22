@@ -4,7 +4,7 @@
 //
 // Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.16 2014/02/24 09:07:58 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.17 2014/03/21 22:46:14 mikem Exp mikem $
 
 #include "VirtualWire.h"
 #include <util/crc16.h>
@@ -243,10 +243,16 @@ uint16_t vw_crc(uint8_t *ptr, uint8_t count)
 uint8_t vw_symbol_6to4(uint8_t symbol)
 {
     uint8_t i;
+    uint8_t count;
     
     // Linear search :-( Could have a 64 byte reverse lookup table?
-    for (i = 0; i < 16; i++)
+    // There is a little speedup here courtesy Ralph Doncaster:
+    // The shortcut works because bit 5 of the symbol is 1 for the last 8
+    // symbols, and it is 0 for the first 8.
+    // So we only have to search half the table
+    for (i = (symbol>>2) & 8, count=8; count-- ; i++)
 	if (symbol == symbols[i]) return i;
+
     return 0; // Not found
 }
 

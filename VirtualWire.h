@@ -5,13 +5,13 @@
 // 
 // Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.12 2014/02/24 09:07:58 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.13 2014/03/21 22:46:14 mikem Exp mikem $
 
 /// \mainpage VirtualWire library for Arduino and other boards
 ///
 /// This is the VirtualWire library.
 ///
-/// VirtualWire is an library for Arduino, Maple and others that provides features to send short
+/// VirtualWire is a library for Arduino, Maple and others that provides features to send short
 /// messages, without addressing, retransmit or acknowledgment, a bit like UDP
 /// over wireless, using ASK (amplitude shift keying). Supports a number of
 /// inexpensive radio transmitters and receivers. All that is required is
@@ -26,7 +26,7 @@
 /// message length and checksum. Messages are sent with 4-to-6 bit encoding
 /// for good DC balance, and a CRC checksum for message integrity.
 ///
-/// Why not just use a UART connected directly to the
+/// But why not just use a UART connected directly to the
 /// transmitter/receiver? As discussed in the RFM documentation, ASK receivers
 /// require a burst of training pulses to synchronize the transmitter and
 /// receiver, and also requires good balance between 0s and 1s in the message
@@ -40,12 +40,14 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.23.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.24.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
-/// You can also find online help and disussion at http://groups.google.com/group/virtualwire
+/// You can also find online help and disussion at 
+/// http://groups.google.com/group/virtualwire
 /// Please use that group for all questions and discussions on this topic. 
 /// Do not contact the author directly, unless it is to discuss commercial licensing.
+/// Before asking a question or reporting a bug, please read http://www.catb.org/esr/faqs/smart-questions.html
 ///
 /// \par Theory of operation
 ///
@@ -56,7 +58,7 @@
 ///
 /// A range of communications
 /// hardware is supported. The ones listed below are available in common retail
-/// outlets in Australian and other countries for under $10 per unit. Many
+/// outlets in Australia and other countries for under $10 per unit. Many
 /// other modules may also work with this software. 
 ///
 /// Runs on a wide range of Arduino processors.
@@ -166,8 +168,9 @@
 ///               on Arduino environment, such as Atmega32u2, Atmega32U4, At90USB162 etc, 
 ///               contributed by Alexandru Daniel Mircescu. 
 /// \version 1.22 Alexandru Daniel Mircescu fixed some problems with the recently added AtMega32U2 support.
-/// \version 1.23 Fixed some errors an inaccuracies in documentatiopn, with the kind assistance of Alexandru
+/// \version 1.23 Fixed some errors and inaccuracies in documentation, with the kind assistance of Alexandru
 ///               Mircescu.
+/// \version 1.24 Minor performance improvement to vw_symbol_6to4() courtesy Ralph Doncaster.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf

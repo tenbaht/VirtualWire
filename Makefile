@@ -8,7 +8,7 @@
 
 PROJNAME = VirtualWire
 # Dont forget to also change the version at the top of RF22.h:
-DISTFILE = $(PROJNAME)-1.23.zip
+DISTFILE = $(PROJNAME)-1.24.zip
 
 all:	doxygen dist upload
 
@@ -23,4 +23,4 @@ dist:
 
 upload:
 	rsync -avz $(DISTFILE) doc/ www.airspayce.com:public_html/mikem/arduino/$(PROJNAME)
-	rsync -avz ../../doc/VirtualWire.pdf doc/ www.airspayce.com:public_html/mikem/arduino/
+	rsync -avz ../../doc/VirtualWire.pdf www.airspayce.com:public_html/mikem/arduino/
