@@ -4,7 +4,7 @@
 //
 // Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.cpp,v 1.17 2014/03/21 22:46:14 mikem Exp mikem $
+// $Id: VirtualWire.cpp,v 1.18 2014/03/26 01:09:36 mikem Exp mikem $
 
 #include "VirtualWire.h"
 #include <util/crc16.h>
@@ -100,7 +100,7 @@
 	#endif
 		
 	#define vw_delay_1ms()\
-		_delay_ms(1.0f)
+		_delay_ms(1)
 		
 	//	If the user defined the interrupt vector, don't overwrite the config
 	#ifndef VW_TIMER_VECTOR 
@@ -422,18 +422,21 @@ uint8_t vw_timer_calc(uint16_t speed, uint16_t max_ticks, uint16_t *nticks)
     // test increasing prescaler (divisor), decreasing ulticks until no overflow
     for (prescaler=1; prescaler < 7; prescaler += 1)
     {
-        // Amount of time per CPU clock tick (in seconds)
-        float clock_time = (1.0 / ((float)F_CPU / (float)prescalers[prescaler]));
-        // Fraction of second needed to xmit one bit
-        float bit_time = ((1.0 / (float)speed) / 8.0);
+	// Integer arithmetic courtesy Jim Remington
+	// 1/Amount of time per CPU clock tick (in seconds)
+        unsigned long inv_clock_time = F_CPU / ((unsigned long)prescalers[prescaler]);
+        // 1/Fraction of second needed to xmit one bit
+        unsigned long inv_bit_time = ((unsigned long)speed) * 8;
         // number of prescaled ticks needed to handle bit time @ speed
-        ulticks = (long)(bit_time / clock_time);
+        ulticks = inv_clock_time/inv_bit_time;
+
         // Test if ulticks fits in nticks bitwidth (with 1-tick safety margin)
         if ((ulticks > 1) && (ulticks < max_ticks))
         {
             break; // found prescaler
         }
         // Won't fit, check with next prescaler value
+
     }
 
     // Check for error
@@ -502,7 +505,7 @@ void vw_setup(uint16_t speed)
 #elif defined(__arm__) && defined(CORE_TEENSY)
     // on Teensy 3.0 (32 bit ARM), use an interval timer
     IntervalTimer *t = new IntervalTimer();
-    t->begin(TIMER1_COMPA_vect, 125000.0 / (float)(speed));
+    t->begin(TIMER1_COMPA_vect, 125000 / speed);
 
 #else // ARDUINO
     // This is the path for most Arduinos

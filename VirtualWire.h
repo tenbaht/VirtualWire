@@ -5,7 +5,7 @@
 // 
 // Author: Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
 // Copyright (C) 2008 Mike McCauley
-// $Id: VirtualWire.h,v 1.13 2014/03/21 22:46:14 mikem Exp mikem $
+// $Id: VirtualWire.h,v 1.14 2014/03/26 01:09:36 mikem Exp mikem $
 
 /// \mainpage VirtualWire library for Arduino and other boards
 ///
@@ -40,7 +40,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.24.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.25.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at 
@@ -171,6 +171,8 @@
 /// \version 1.23 Fixed some errors and inaccuracies in documentation, with the kind assistance of Alexandru
 ///               Mircescu.
 /// \version 1.24 Minor performance improvement to vw_symbol_6to4() courtesy Ralph Doncaster.
+/// \version 1.25 Removed all use of floating point code, with assistance of a patch from Jim Remington.
+///               Result is smaller code size.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
