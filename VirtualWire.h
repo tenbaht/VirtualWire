@@ -61,7 +61,7 @@
 /// outlets in Australia and other countries for under $10 per unit. Many
 /// other modules may also work with this software. 
 ///
-/// Runs on a wide range of Arduino processors.
+/// Runs on a wide range of Arduino processors using Arduino IDE 1.0 or later.
 /// Also runs on on Energia
 /// with MSP430G2553 / G2452 and Arduino with ATMega328 (courtesy Yannick DEVOS - XV4Y), 
 /// but untested by us. It also runs on Teensy 3.0 (courtesy of Paul
@@ -173,6 +173,8 @@
 /// \version 1.24 Minor performance improvement to vw_symbol_6to4() courtesy Ralph Doncaster.
 /// \version 1.25 Removed all use of floating point code, with assistance of a patch from Jim Remington.
 ///               Result is smaller code size.
+/// \version 1.26 Removed util/crc16.h from distribution, since it is now included in arduino IDE
+///               since version 1.0. Support for arduino IDE prior to 1.0 is now abandoned.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
