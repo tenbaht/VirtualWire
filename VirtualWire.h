@@ -11,6 +11,18 @@
 ///
 /// This is the VirtualWire library.
 ///
+/// \par END OF LIFE NOTICE
+///
+/// This VirtualWire library has now been superceded by the RadioHead 
+/// library http://www.airspayce.com/mikem/arduino/RadioHead
+/// RadioHead and its RH_ASK driver provides all the features supported by VirtualWire, and much more
+/// besides, including Reliable Datagrams, Addressing, Routing and Meshes. All the platforms that
+/// VirtualWire supported are also supported by RadioHead.
+///
+/// This library will no longer be maintained or updated, but we will continue to publish
+/// it for the benefit of the the community. Nevertheless we recommend upgrading to RadioHead where
+/// possible.
+///
 /// VirtualWire is a library for Arduino, Maple and others that provides features to send short
 /// messages, without addressing, retransmit or acknowledgment, a bit like UDP
 /// over wireless, using ASK (amplitude shift keying). Supports a number of
@@ -40,7 +52,7 @@
 /// Example Arduino programs are included to show the main modes of use.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.25.zip
+/// from http://www.airspayce.com/mikem/arduino/VirtualWire/VirtualWire-1.27.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/VirtualWire
 ///
 /// You can also find online help and disussion at 
@@ -64,8 +76,9 @@
 /// Runs on a wide range of Arduino processors using Arduino IDE 1.0 or later.
 /// Also runs on on Energia
 /// with MSP430G2553 / G2452 and Arduino with ATMega328 (courtesy Yannick DEVOS - XV4Y), 
-/// but untested by us. It also runs on Teensy 3.0 (courtesy of Paul
-/// Stoffregen), but untested by us. Also compiles and runs on ATtiny85 in
+/// but untested by us. It also runs on Teensy 3.0 and 3.1 (courtesy of Paul
+/// Stoffregen) using the Arduino IDE 1.0.5 and the Teensyduino addon 1.18. 
+/// Also compiles and runs on ATtiny85 in
 /// Arduino environment, courtesy r4z0r7o3. Also compiles on maple-ide-v0.0.12,
 /// and runs on Maple, flymaple 1.1 etc. Runs on ATmega8/168 (Arduino Diecimila,
 /// Uno etc), ATmega328 and can run on almost any other AVR8 platform,
@@ -99,6 +112,11 @@
 /// transmitter/receiver, such as the audio channel of an A/V transmitter/receiver. You may need
 /// buffers at each end of the connection to convert the 0-5V digital output to a suitable analog voltage.
 ///
+/// Caution: ATTiny85 has only 2 timers, one (timer 0) usually used for
+/// millis() and one (timer 1) for PWM analog outputs. The VirtualWire
+/// library, when built for ATTiny85, takes over timer 0, which prevents use
+/// of millis() etc but does permit analog outputs.
+///
 /// \par Installation
 ///
 /// To install, unzip the library into the libraries sub-directory of your
@@ -107,6 +125,26 @@
 /// code in
 /// File->Sketchbook->Examples->VirtualWire menu.
 ///
+/// \par Donations
+///
+/// This library is offered under a free GPL license for those who want to use it that way. 
+/// We try hard to keep it up to date, fix bugs
+/// and to provide free support. If this library has helped you save time or money, please consider donating at
+/// http://www.airspayce.com or here:
+///
+/// \htmlonly <form action="https://www.paypal.com/cgi-bin/webscr" method="post"><input type="hidden" name="cmd" value="_donations" /> <input type="hidden" name="business" value="mikem@airspayce.com" /> <input type="hidden" name="lc" value="AU" /> <input type="hidden" name="item_name" value="Airspayce" /> <input type="hidden" name="item_number" value="VirtualWire" /> <input type="hidden" name="currency_code" value="USD" /> <input type="hidden" name="bn" value="PP-DonationsBF:btn_donateCC_LG.gif:NonHosted" /> <input type="image" alt="PayPal — The safer, easier way to pay online." name="submit" src="https://www.paypalobjects.com/en_AU/i/btn/btn_donateCC_LG.gif" /> <img alt="" src="https://www.paypalobjects.com/en_AU/i/scr/pixel.gif" width="1" height="1" border="0" /></form> \endhtmlonly
+/// 
+/// \par Trademarks
+///
+/// VirtualWire is a trademark of AirSpayce Pty Ltd. The VirtualWire mark was first used on April 20 2008 for
+/// international trade, and is used only in relation to data communications hardware and software and related services.
+/// It is not to be confused with any other similar marks covering other goods and services.
+///
+/// \par Copyright
+///
+/// This software is Copyright (C) 2011-2014 Mike McCauley. Use is subject to license
+/// conditions. The main licensing options available are GPL V2 or Commercial:
+/// 
 /// \par Open Source Licensing GPL V2
 ///
 /// This is the appropriate option if you want to share the source code of your
@@ -175,6 +213,9 @@
 ///               Result is smaller code size.
 /// \version 1.26 Removed util/crc16.h from distribution, since it is now included in arduino IDE
 ///               since version 1.0. Support for arduino IDE prior to 1.0 is now abandoned.
+/// \version 1.27 Reinstated VWutil/crc16.h for the benefit of other platforms such as Teensy.
+///               Testing on Teensy 3.1. Added End Of Life notice. This library will no longer be maintained 
+///               and updated: use RadioHead instead.
 ///
 /// \par Implementation Details
 /// See: http://www.airspayce.com/mikem/arduino/VirtualWire.pdf
@@ -206,33 +247,37 @@
 #define VW_PLATFORM_MSP430  2
 #define VW_PLATFORM_STM32   3
 #define VW_PLATFORM_GENERIC_AVR8 4
+#define VW_PLATFORM_UNO32   5
 
 //	Select platform automatically, if possible
 #ifndef VW_PLATFORM
-	#if defined(ARDUINO)
-		#define VW_PLATFORM VW_PLATFORM_ARDUINO
-	#elif defined(__MSP430G2452__) || defined(__MSP430G2553__)
-		#define VW_PLATFORM VW_PLATFORM_MSP430
-	#elif defined(MCU_STM32F103RE)
-		#define VW_PLATFORM VW_PLATFORM_STM32
-	#else
-		#error Platform not defined! 	
-	#endif
+ #if defined(ARDUINO)
+  #define VW_PLATFORM VW_PLATFORM_ARDUINO
+ #elif defined(__MSP430G2452__) || defined(__MSP430G2553__)
+  #define VW_PLATFORM VW_PLATFORM_MSP430
+ #elif defined(MCU_STM32F103RE)
+  #define VW_PLATFORM VW_PLATFORM_STM32
+ #elif defined MPIDE
+  #define VW_PLATFORM VW_PLATFORM_UNO32
+ #else
+  #error Platform not defined! 	
+ #endif
 #endif
 
 #if (VW_PLATFORM == VW_PLATFORM_ARDUINO)
-	#if (ARDUINO >= 100)
-		#include <Arduino.h>
-	 #else
-		#include <wiring.h>
-	#endif
+ #if (ARDUINO >= 100)
+  #include <Arduino.h>
+ #else
+  #include <wiring.h>
+#endif
 #elif (VW_PLATFORM == VW_PLATFORM_MSP430)// LaunchPad specific
-	#include "legacymsp430.h"
-	#include "Energia.h"
+ #include "legacymsp430.h"
+ #include "Energia.h"
 #elif (VW_PLATFORM == VW_PLATFORM_STM32) // Maple etc
-	#include <stdint.h>
-	// Defines which timer to use on Maple
-	#define MAPLE_TIMER 1
+ #include <stdint.h>
+ // Defines which timer to use on Maple
+ #define MAPLE_TIMER 1
+#elif (VW_PLATFORM == VW_PLATFORM_UNO32)
 #elif (VW_PLATFORM != VW_PLATFORM_GENERIC_AVR8) 
 	#error Platform unknown!
 #endif
@@ -291,7 +336,7 @@ extern "C"
 #endif //__cplusplus
 
 #if (VW_PLATFORM != VW_PLATFORM_GENERIC_AVR8 )
-    // Set the digital IO pin to enable the transmitter (press to talk, PTT)'
+    // Set the digital IO pin which will be used to enable the transmitter (press to talk, PTT)'
     /// This pin will only be accessed if
     /// the transmitter is enabled
     /// \param[in] pin The Arduino pin number to enable the transmitter. Defaults to 10.

@@ -7,7 +7,17 @@
 // $Id: VirtualWire.cpp,v 1.18 2014/03/26 01:09:36 mikem Exp mikem $
 
 #include "VirtualWire.h"
-#include <util/crc16.h>
+// Arduino 1.0 includes crc16.h, so use it else can get clashes with other libraries
+#if defined(ARDUINO) && (ARDUINO >= 100)
+ #if defined (__MK20DX128__) || defined (__MK20DX256__)
+  // Teensyduino for Arduino 1.0.5 does not have crc16.h
+  #include <VWutil/crc16.h>
+ #else
+  #include <util/crc16.h>
+ #endif
+#else
+ #include <VWutil/crc16.h>
+#endif
 
 //	Platform specific dependencies
 #if (VW_PLATFORM == VW_PLATFORM_ARDUINO)
@@ -27,15 +37,6 @@
 	#include <string.h>
 	#include <stdbool.h>
 #endif
-
-/// Outgoing message bits grouped as 6-bit words
-/// 36 alternating 1/0 bits, followed by 12 bits of start symbol
-/// Followed immediately by the 4-6 bit encoded byte count,
-/// message buffer and 2 byte FCS
-/// Each byte from the byte count on is translated into 2x6-bit words
-/// Caution, each symbol is transmitted LSBit first,
-/// but each byte is transmitted high nibble first
-#define VW_HEADER_LEN 8
 
 //	Define digitalRead, digitalWrite and digital pins for Arduino like platforms
 #if (VW_PLATFORM != VW_PLATFORM_GENERIC_AVR8 )
@@ -505,6 +506,7 @@ void vw_setup(uint16_t speed)
 #elif defined(__arm__) && defined(CORE_TEENSY)
     // on Teensy 3.0 (32 bit ARM), use an interval timer
     IntervalTimer *t = new IntervalTimer();
+    void TIMER1_COMPA_vect(void);
     t->begin(TIMER1_COMPA_vect, 125000 / speed);
 
 #else // ARDUINO
@@ -782,7 +784,11 @@ uint8_t vw_get_rx_bad()
 // Its job is to output the next bit from the transmitter (every 8 calls)
 // and to call the PLL code if the receiver is enabled
 //ISR(SIG_OUTPUT_COMPARE1A)
+#if defined(__arm__) && defined(CORE_TEENSY)	
+void TIMER1_COMPA_vect(void)
+#else
 ISR(VW_TIMER_VECTOR)
+#endif
 {
 
     if (vw_rx_enabled && !vw_tx_enabled)
